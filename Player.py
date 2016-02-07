@@ -4,15 +4,18 @@ from Global import *
 from Vector import Vector
 
 
-class Unit:
-    """Used for all moving objects. Defined by position and speed, maybe to change soon. No external dependencies."""
-
+class Player:
     def __init__(self, position=Vector([0, 0]), speed=Vector([0, 0]), radius=5, colour=PLAYER_COLOUR):
         self.position = position
         self.speed = speed
         self.colour = colour
         self.radius = radius
-        self.old_position = position
+        self.turn = "neutral"
+        self.speed_up = False
+        self.speed_down = False
+        self.speed_boost = False
+        self.speed_boost_counter = -5000
+        self.acceleration = ACCELERATION_DEFAULT
         if speed.values[0] == 0 and speed.values[1] >= 0:
             self.direction = math.pi / 2
         if speed.values[0] == 0 and speed.values[1] < 0:
@@ -20,13 +23,30 @@ class Unit:
         else:
             self.direction = math.atan(speed.values[1] / speed.values[0])
 
+    def update(self, counter):
+        if self.turn == "right":
+            self.rotate(math.pi/120)
+        elif self.turn == "left":
+            self.rotate(-math.pi/120)
+        if self.speed_up:
+            if self.speed.norm() != 0:
+                self.accelerate()
+        if self.speed_down:
+             if self.speed.norm() != 0:
+                self.brake()
+        if self.speed_boost:
+            self.speed_boost_counter = counter
+            self.acceleration = 3*ACCELERATION_DEFAULT
+            self.speed_boost = False
+        if counter - self.speed_boost_counter == .5*FRAME_RATE:
+            self.acceleration = ACCELERATION_DEFAULT
+
     def move(self, obstacles):
         # TODO: Add particles behind the boat
         for obstacle in obstacles:
             self.check_collision(obstacle)
-        self.old_position = self.position
         self.position += self.speed
-        self.speed -= self.speed.scalar(.01)
+        self.speed -= self.speed.scalar(.0025*self.speed.norm())
 
     def check_collision(self, obstacle):
         new_position = self.position + self.speed
@@ -40,11 +60,11 @@ class Unit:
         self.speed.values[1] = y_speed
 
     def accelerate(self):
-        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(.05)
+        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
         self.speed += acceleration_vector
 
     def brake(self):
-        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(.05)
+        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
         self.speed -= acceleration_vector
 
     def old_turn(self, angle):
@@ -59,14 +79,12 @@ class Unit:
             self.speed.values[0] = x_speed
             self.speed.values[1] = y_speed
 
-    def turn(self, angle):
+    def rotate(self, angle):
         self.direction += angle
 
     def draw(self, screen, camera):
         pygame.draw.circle(screen, self.colour, (self.position - camera).to_int(), self.radius)
 
-
-class Player(Unit):
     def restart(self, position, speed):
         self.position = position
         self.speed = speed
@@ -75,3 +93,4 @@ class Player(Unit):
     # TODO: make a sprite for the player with this bounding box, and use that rather than the circle
     def draw_player(self, screen, camera):
         pygame.draw.circle(screen, self.colour, (self.position - camera).to_int(), self.radius)
+

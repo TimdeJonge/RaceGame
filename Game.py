@@ -1,5 +1,5 @@
 from Vector import Vector
-from Unit import Player
+from Player import Player
 from Global import *
 import math
 import pygame
@@ -37,38 +37,30 @@ class Game(object):
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.turn = "left"
+                    self.player.turn = "left"
                 elif event.key == pygame.K_RIGHT:
-                    self.turn = "right"
+                    self.player.turn = "right"
                 elif event.key == pygame.K_UP:
-                    self.acceleration = True
+                    self.player.speed_up = True
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.brake = True
+                    self.player.speed_down = True
                 elif event.key == pygame.K_r:
                     self.player.restart(Vector([100, 100]), Vector([1, 1]))
+                elif event.key == pygame.K_SPACE:
+                    self.player.speed_boost = True
 
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                    self.turn = "neutral"
+                    self.player.turn = "neutral"
                 elif event.key == pygame.K_UP:
-                    self.acceleration = False
+                    self.player.speed_up = False
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.brake = False
+                    self.player.speed_down = False
         return False
 
     def update(self):
         self.counter += 1
-
-        if self.turn == "right":
-            self.player.turn(math.pi/120)
-        elif self.turn == "left":
-            self.player.turn(-math.pi/120)
-        if self.acceleration:
-            if self.player.speed.values != [0, 0]:
-                self.player.accelerate()
-        if self.brake:
-            if self.player.speed.values != [0, 0]:
-                self.player.brake()
+        self.player.update(self.counter)
 
         self.player.move(self.obstacle_list)
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
@@ -77,7 +69,6 @@ class Game(object):
                        self.player.position -
                        Vector([SCREEN_WIDTH/2, SCREEN_HEIGHT/2]) +
                        self.player.speed.scalar(40)).scalar(.05)
-
 
     @staticmethod
     def draw_time(screen, counter):
