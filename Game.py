@@ -10,11 +10,12 @@ class Game(object):
     def __init__(self):
         # SETTINGS:
         self.debug = True
-        self.level = "L"
+        self.level = "Baby Park"
 
         # RELEVANT VALUES
         self.counter = 0
-        self.player = Player(Vector([100, 40]), Vector([0, -1.1]), 5, PLAYER_COLOUR)
+        self.player = Player(Vector([100, 100]), Vector([5, 0]), 5, PLAYER_COLOUR, True)
+        self.player_list = [self.player]
 
         if self.level == "Baby Park":
             self.obstacle_list = levels.baby_park
@@ -24,6 +25,8 @@ class Game(object):
             self.obstacle_list = levels.l
         elif self.level == "Clear":
             self.obstacle_list = levels.clear
+        elif self.level == "Test":
+            self.obstacle_list = levels.test
         self.turn = "neutral"
         self.acceleration = False
         self.brake = False
@@ -60,9 +63,9 @@ class Game(object):
 
     def update(self):
         self.counter += 1
-        self.player.update(self.counter)
-
-        self.player.move(self.obstacle_list)
+        for player in self.player_list:
+            player.update(self.counter, self.obstacle_list)
+            player.move(self.obstacle_list)
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
         # Just subtract self.camera from everything that needs to be drawn on screen and it will work.
         self.camera = (self.camera.scalar(19) +
@@ -89,9 +92,9 @@ class Game(object):
     def draw_debug(self, screen):
         font = pygame.font.SysFont('Console', 10, False, False)
         pygame.draw.circle(screen, BLACK, [600, 400], 0)
-        standard_vector = Vector((math.cos(self.player.direction), math.sin(self.player.direction)))
-        pygame.draw.line(screen, WHITE, (self.player.position - self.camera).values,
-                                        (self.player.position + standard_vector.scalar(50) - self.camera).values)
+        # standard_vector = Vector((math.cos(self.player.direction), math.sin(self.player.direction)))
+        # pygame.draw.line(screen, WHITE, (self.player.position - self.camera).values,
+        #                                 (self.player.position + standard_vector.scalar(50) - self.camera).values)
         debug_string1 = "x_speed = " + str(self.player.speed.values[0])
         debug_string2 = "y_speed = " + str(self.player.speed.values[1])
         debug_string3 = "Total speed = " + str(math.sqrt(self.player.speed.values[0]**2 + self.player.speed.values[1]**2))
@@ -110,7 +113,8 @@ class Game(object):
         screen.fill(BACKGROUND_COLOUR)
         for obstacle in self.obstacle_list:
             obstacle.draw(screen, self.camera)
-        self.player.draw_player(screen, self.camera)
+        for player in self.player_list:
+            player.draw_player(screen, self.camera)
         Game.draw_time(screen, self.counter)
         if self.debug:
             self.draw_debug(screen)

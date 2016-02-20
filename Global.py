@@ -14,3 +14,5 @@ SCREEN_HEIGHT = 800
 FRAME_RATE = 120
 
 ACCELERATION_DEFAULT = 0.05
+
+# TODO: Create new class Rectangle used for bounding boxes.

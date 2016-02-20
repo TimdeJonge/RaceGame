@@ -5,10 +5,11 @@ from Vector import Vector
 
 
 class Player:
-    def __init__(self, position=Vector([0, 0]), speed=Vector([0, 0]), radius=5, colour=PLAYER_COLOUR):
+    def __init__(self, position=Vector([0, 0]), speed=Vector([0, 0]), radius=5, colour=PLAYER_COLOUR, human=False):
         self.position = position
         self.speed = speed
         self.colour = colour
+        self.human = human
         self.radius = radius
         self.turn = "neutral"
         self.speed_up = False
@@ -23,7 +24,37 @@ class Player:
         else:
             self.direction = math.atan(speed.values[1] / speed.values[0])
 
-    def update(self, counter):
+    def run_ai(self, level):
+        self.speed_up = True
+        standard_vector = Vector((math.cos(self.direction), math.sin(self.direction)))
+        new_position = self.position + self.speed.scalar(100)
+        good_choice = True
+        for obstacle in level:
+            if obstacle.collides_with(new_position):
+                good_choice = False
+                break
+        if not good_choice:
+            self.turn = "right"
+        else:
+            self.turn = "neutral"
+
+    def update(self, counter, level):
+        if not self.human:
+            self.run_ai(level)
+
+        if self.human == "test":
+            if self.speed.values[0] <= 0:
+                print(self.position, self.speed, self.direction)
+                self.set_speed(0,1)
+                self.speed_up = False
+                self.turn = "neutral"
+            else:
+                self.speed_up = True
+                if self.direction < math.pi:
+                    self.turn = "right"
+                else:
+                    self.turn = "neutral"
+
         if self.turn == "right":
             self.rotate(math.pi/120)
         elif self.turn == "left":
@@ -32,7 +63,7 @@ class Player:
             if self.speed.norm() != 0:
                 self.accelerate()
         if self.speed_down:
-             if self.speed.norm() != 0:
+            if self.speed.norm() != 0:
                 self.brake()
         if self.speed_boost:
             self.speed_boost_counter = counter
@@ -46,7 +77,10 @@ class Player:
         for obstacle in obstacles:
             self.check_collision(obstacle)
         self.position += self.speed
-        self.speed -= self.speed.scalar(.0025*self.speed.norm())
+        if self.speed.norm() < 5:
+            self.speed -= self.speed.scalar(0.01)
+        else:
+            self.speed -= self.speed.scalar(.0025*self.speed.norm())
 
     def check_collision(self, obstacle):
         new_position = self.position + self.speed
@@ -82,9 +116,6 @@ class Player:
     def rotate(self, angle):
         self.direction += angle
 
-    def draw(self, screen, camera):
-        pygame.draw.circle(screen, self.colour, (self.position - camera).to_int(), self.radius)
-
     def restart(self, position, speed):
         self.position = position
         self.speed = speed
@@ -93,4 +124,6 @@ class Player:
     # TODO: make a sprite for the player with this bounding box, and use that rather than the circle
     def draw_player(self, screen, camera):
         pygame.draw.circle(screen, self.colour, (self.position - camera).to_int(), self.radius)
-
+        standard_vector = Vector((math.cos(self.direction), math.sin(self.direction)))
+        pygame.draw.line(screen, self.colour, (self.position - camera).values,
+                                              (self.position + standard_vector.scalar(10) - camera).values)
