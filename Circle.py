@@ -1,7 +1,7 @@
 import pygame
 from Vector import Vector
 from Global import *
-import math
+
 
 class Circle:
     """Used for Obstacles that are polygons."""
@@ -14,7 +14,7 @@ class Circle:
         draw_centre = self.centre - camera
         pygame.draw.circle(screen, self.colour, draw_centre.to_int(), self.radius)
 
-    def collides_with(self, point):
+    def contains(self, point):
         if (self.centre - point).norm() > self.radius:
             return False
         else:

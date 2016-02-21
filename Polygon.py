@@ -1,5 +1,6 @@
 import pygame
 from Vector import Vector
+from Rectangle import Rectangle
 from Global import *
 
 
@@ -11,6 +12,20 @@ class Polygon:
         for point in pointlist:
             self.vector_list.append(Vector(point))
         self.colour = colour
+        x_min = pointlist[0][0]
+        x_max = pointlist[0][0]
+        y_min = pointlist[0][1]
+        y_max = pointlist[0][1]
+        for point in pointlist:
+            if point[0] < x_min:
+                x_min = point[0]
+            if point[0] > x_max:
+                x_max = point[0]
+            if point[1] < y_min:
+                y_min = point[1]
+            if point[1] > y_max:
+                y_max = point[1]
+        self.bounding_box = Rectangle([x_min, y_min], [x_max, y_max])
 
     def draw(self, screen, camera):
         draw_list = []
@@ -19,7 +34,9 @@ class Polygon:
             draw_list.append(draw_vector.values)
         pygame.draw.polygon(screen, self.colour, draw_list)
 
-    def collides_with(self, point):
+    def contains(self, point):
+        if not self.bounding_box.contains(point):
+            return False
         length = len(self.vector_list)
         # magic for loop: A point is inside the polygon when it's on the same side of an edge as an other vertex.
         # the following for loop checks this for every edge. This works, don't change unless
@@ -55,3 +72,7 @@ class Polygon:
         parallel, perpendicular = player.speed.split(point1 - point2)
         new_speed = (parallel - perpendicular).scalar(.5)
         player.set_speed(new_speed.values[0], new_speed.values[1])
+
+poly = Polygon([(400, 150), (800, 150), (1000, 300), (1000, 500),
+                (800, 650), (400, 650), (200, 500), (200, 300)])
+poly.contains(Vector([0, 0]))

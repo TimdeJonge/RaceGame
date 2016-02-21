@@ -1,31 +1,6 @@
-class Boat():
-    def __init__(self, tonnage):
-        self.tonnage = tonnage
-        self.name = ""
-        self.isDocked = True
-
-    def dock(self):
-        if self.isDocked:
-            print("You are already docked.")
-        else:
-            self.isDocked = True
-            print("Docking")
-
-    def undock(self):
-        if not self.isDocked:
-            print("You aren't docked.")
-        else:
-            self.isDocked = False
-            print("Undocking")
-
-class Submarine(Boat):
-    def submerge(self):
-        print("Submerge!")
-
-    def set_tonnage(self, tonnage):
-        self.tonnage = tonnage
-
-b = Submarine(1)
-b.set_tonnage(3)
-print(b.tonnage)
-
+file = open('test.txt', 'w')
+for i in range(10):
+    for j in range(10):
+        file.write(str(j) + " ")
+    file.write("\n")
+file.close()

@@ -30,7 +30,7 @@ class Player:
         new_position = self.position + self.speed.scalar(100)
         good_choice = True
         for obstacle in level:
-            if obstacle.collides_with(new_position):
+            if obstacle.contains(new_position):
                 good_choice = False
                 break
         if not good_choice:
@@ -84,9 +84,8 @@ class Player:
 
     def check_collision(self, obstacle):
         new_position = self.position + self.speed
-        if obstacle.collides_with(new_position):
+        if obstacle.contains(new_position):
             # TODO: Add sound effect to collision
-            print("Collision!")
             obstacle.handle_collision(self)
 
     def set_speed(self, x_speed, y_speed):

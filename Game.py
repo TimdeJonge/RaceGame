@@ -14,7 +14,7 @@ class Game(object):
 
         # RELEVANT VALUES
         self.counter = 0
-        self.player = Player(Vector([100, 100]), Vector([5, 0]), 5, PLAYER_COLOUR, True)
+        self.player = Player(Vector([100, 100]), Vector([1, 0]), 5, PLAYER_COLOUR, True)
         self.player_list = [self.player]
 
         if self.level == "Baby Park":
