@@ -1,9 +1,11 @@
-import pygame
 from Game import Game
 from Global import *
+import pygame
 
 
 def main():
+    pygame.mixer.pre_init(44100, -16, 2, 2048)
+    pygame.mixer.init()
     pygame.init()
 
     size = (SCREEN_WIDTH, SCREEN_HEIGHT)

@@ -5,7 +5,7 @@ from Vector import Vector
 
 
 class Player:
-    def __init__(self, position=Vector([0, 0]), speed=Vector([0, 0]), radius=5, colour=PLAYER_COLOUR, human=False):
+    def __init__(self, sounds, position=Vector([0, 0]), speed=Vector([0, 0]), radius=5, colour=PLAYER_COLOUR, human=False):
         self.position = position
         self.speed = speed
         self.colour = colour
@@ -23,10 +23,10 @@ class Player:
             self.direction = - math.pi / 2
         else:
             self.direction = math.atan(speed.values[1] / speed.values[0])
+        self.bump = sounds
 
     def run_ai(self, level):
         self.speed_up = True
-        standard_vector = Vector((math.cos(self.direction), math.sin(self.direction)))
         new_position = self.position + self.speed.scalar(100)
         good_choice = True
         for obstacle in level:
@@ -45,7 +45,7 @@ class Player:
         if self.human == "test":
             if self.speed.values[0] <= 0:
                 print(self.position, self.speed, self.direction)
-                self.set_speed(0,1)
+                self.set_speed(0, 1)
                 self.speed_up = False
                 self.turn = "neutral"
             else:
@@ -85,8 +85,9 @@ class Player:
     def check_collision(self, obstacle):
         new_position = self.position + self.speed
         if obstacle.contains(new_position):
-            # TODO: Add sound effect to collision
-            obstacle.handle_collision(self)
+            volume = min(1,obstacle.handle_collision(self)/5)
+            self.bump.set_volume(volume)
+            self.bump.play()
 
     def set_speed(self, x_speed, y_speed):
         self.speed.values[0] = x_speed

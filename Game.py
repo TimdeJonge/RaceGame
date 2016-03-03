@@ -14,7 +14,8 @@ class Game(object):
 
         # RELEVANT VALUES
         self.counter = 0
-        self.player = Player(Vector([100, 100]), Vector([1, 0]), 5, PLAYER_COLOUR, True)
+        self.sounds = self.init_sounds()
+        self.player = Player(self.sounds, Vector([100, 100]), Vector([1, 0]), 5, PLAYER_COLOUR, True)
         self.player_list = [self.player]
 
         if self.level == "Baby Park":
@@ -73,6 +74,34 @@ class Game(object):
                        Vector([SCREEN_WIDTH/2, SCREEN_HEIGHT/2]) +
                        self.player.speed.scalar(40)).scalar(.05)
 
+    def draw_debug(self, screen):
+        font = pygame.font.SysFont('Console', 10, False, False)
+        pygame.draw.circle(screen, BLACK, [600, 400], 0)
+        debug_string1 = "x_speed = " + str(self.player.speed.values[0])
+        debug_string2 = "y_speed = " + str(self.player.speed.values[1])
+        debug_string3 = "Total speed = " + str(math.sqrt(self.player.speed.norm()**2))
+        debug_string4 = "Location = " + str(self.player.position)
+        text1 = font.render(debug_string1, True, WHITE)
+        text2 = font.render(debug_string2, True, WHITE)
+        text3 = font.render(debug_string3, True, WHITE)
+        text4 = font.render(debug_string4, True, WHITE)
+        screen.blit(text1, [0, 0])
+        screen.blit(text2, [0, 15])
+        screen.blit(text3, [0, 30])
+        screen.blit(text4, [0, 45])
+
+    def draw_screen(self, screen):
+        """Calls all draw methods.
+        :param screen       the screen on which to draw all objects"""
+        screen.fill(BACKGROUND_COLOUR)
+        for obstacle in self.obstacle_list:
+            obstacle.draw(screen, self.camera)
+        for player in self.player_list:
+            player.draw_player(screen, self.camera)
+        Game.draw_time(screen, self.counter)
+        if self.debug:
+            self.draw_debug(screen)
+
     @staticmethod
     def draw_time(screen, counter):
         """Draws time in the lower right corner
@@ -89,32 +118,7 @@ class Game(object):
         text = font.render(output_string, True, WHITE)
         screen.blit(text, [SCREEN_WIDTH - 150, SCREEN_HEIGHT - 20])
 
-    def draw_debug(self, screen):
-        font = pygame.font.SysFont('Console', 10, False, False)
-        pygame.draw.circle(screen, BLACK, [600, 400], 0)
-        # standard_vector = Vector((math.cos(self.player.direction), math.sin(self.player.direction)))
-        # pygame.draw.line(screen, WHITE, (self.player.position - self.camera).values,
-        #                                 (self.player.position + standard_vector.scalar(50) - self.camera).values)
-        debug_string1 = "x_speed = " + str(self.player.speed.values[0])
-        debug_string2 = "y_speed = " + str(self.player.speed.values[1])
-        debug_string3 = "Total speed = " + str(math.sqrt(self.player.speed.values[0]**2 + self.player.speed.values[1]**2))
-        debug_string4 = "Location = " + str(self.player.position)
-        text1 = font.render(debug_string1, True, WHITE)
-        text2 = font.render(debug_string2, True, WHITE)
-        text3 = font.render(debug_string3, True, WHITE)
-        text4 = font.render(debug_string4, True, WHITE)
-        screen.blit(text1, [0, 0])
-        screen.blit(text2, [0, 15])
-        screen.blit(text3, [0, 30])
-        screen.blit(text4, [0, 45])
-
-    def draw_screen(self, screen):
-        """Calls all draw methods."""
-        screen.fill(BACKGROUND_COLOUR)
-        for obstacle in self.obstacle_list:
-            obstacle.draw(screen, self.camera)
-        for player in self.player_list:
-            player.draw_player(screen, self.camera)
-        Game.draw_time(screen, self.counter)
-        if self.debug:
-            self.draw_debug(screen)
+    @staticmethod
+    def init_sounds():
+        HIT_SOUND = pygame.mixer.Sound("hit.ogg")
+        return HIT_SOUND

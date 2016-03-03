@@ -18,7 +18,6 @@ class Rectangle:
 
     def handle_collision(self, player):
         new_position = player.position + player.speed
-        direction = "null"
         if (player.position.values[0] <= self.left <= new_position.values[0] or
                 new_position.values[0] <= self.right <= player.position.values[0]):
             direction = "y"
@@ -31,10 +30,12 @@ class Rectangle:
             perpendicular = Vector([player.speed.values[0], 0])
             parallel = Vector([0, player.speed.values[1]])
         new_speed = (parallel - perpendicular).scalar(.5)
+        volume = (player.speed - new_speed).norm()
         player.set_speed(new_speed.values[0], new_speed.values[1])
+        return volume
 
     def draw(self, screen, camera):
-        draw_rect = [0,0]
+        draw_rect = [0, 0]
         draw_rect[0] = (Vector([self.left, self.up]) - camera).values
         draw_rect[1] = [self.right - self.left, self.down - self.up]
         pygame.draw.rect(screen, self.colour, draw_rect)

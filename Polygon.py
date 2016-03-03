@@ -71,8 +71,6 @@ class Polygon:
             player.speed = player.speed.scalar(-1)
         parallel, perpendicular = player.speed.split(point1 - point2)
         new_speed = (parallel - perpendicular).scalar(.5)
+        volume = (player.speed - new_speed).norm()
         player.set_speed(new_speed.values[0], new_speed.values[1])
-
-poly = Polygon([(400, 150), (800, 150), (1000, 300), (1000, 500),
-                (800, 650), (400, 650), (200, 500), (200, 300)])
-poly.contains(Vector([0, 0]))
+        return volume

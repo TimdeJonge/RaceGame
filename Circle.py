@@ -25,4 +25,6 @@ class Circle:
                                  self.centre.values[0] - player.position.values[0]])
         parallel, perpendicular = player.speed.split(collision_line)
         new_speed = (parallel - perpendicular).scalar(.5)
+        volume = (player.speed - new_speed).norm()
         player.set_speed(new_speed.values[0], new_speed.values[1])
+        return volume
