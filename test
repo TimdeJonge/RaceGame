@@ -4,3 +4,5 @@ for i in range(10):
         file.write(str(j) + " ")
     file.write("\n")
 file.close()
+
+print 'wow'
