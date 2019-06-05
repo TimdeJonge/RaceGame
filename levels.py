@@ -29,3 +29,9 @@ l = [Polygon([(0, -X), (0, X), (-X, X), (-X, -X)]),
 clear = []
 
 test = [Rectangle([0, 0], [100, 100])]
+
+donut = [Rectangle([-X, -X], [0, X]),
+         Rectangle([-X, -X], [X, 0]),
+         Rectangle([2000, -X], [X,X]),
+         Rectangle([-X, 2000], [X,X]),
+         Circle((1000,1000), 500)]

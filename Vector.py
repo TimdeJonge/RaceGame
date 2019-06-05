@@ -23,7 +23,6 @@ class Vector:
             self.amount = amount
 
     def __str__(self):
-        super().__str__()
         return str(self.values)
 
     def linear_combination(self, other, alpha, beta):

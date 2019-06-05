@@ -10,13 +10,14 @@ class Game(object):
     def __init__(self):
         # SETTINGS:
         self.debug = True
-        self.level = "Baby Park"
+        self.level = "L"
 
         # RELEVANT VALUES
         self.counter = 0
         self.sounds = self.init_sounds()
-        self.player = Player(self.sounds, Vector([100, 100]), Vector([1, 0]), 5, PLAYER_COLOUR, True)
-        self.player_list = [self.player]
+        #self.player = Player(self.sounds, Vector([100,100]), Vector([1,0]), 5, PLAYER_COLOUR, True)
+        self.player_list = [Player(self.sounds, Vector([100, 100]), Vector([1, 0]), 5, BLACK) for i in range(5)]
+        self.player = self.player_list[0]
 
         if self.level == "Baby Park":
             self.obstacle_list = levels.baby_park
@@ -28,6 +29,8 @@ class Game(object):
             self.obstacle_list = levels.clear
         elif self.level == "Test":
             self.obstacle_list = levels.test
+        elif self.level == "donut":
+            self.obstacle_list = levels.donut
         self.turn = "neutral"
         self.acceleration = False
         self.brake = False
@@ -75,18 +78,18 @@ class Game(object):
                        self.player.speed.scalar(40)).scalar(.05)
 
     def draw_debug(self, screen):
-        font = pygame.font.SysFont('Console', 10, False, False)
+        font = pygame.font.SysFont('Console', 20, False, False)
         pygame.draw.circle(screen, BLACK, [600, 400], 0)
-        debug_string1 = "x_speed = " + str(self.player.speed.values[0])
-        debug_string2 = "y_speed = " + str(self.player.speed.values[1])
+        debug_string1 = "direction = " + str(self.player.turn)
+        #debug_string2 = "y_speed = " + str(self.player.speed.values[1])
         debug_string3 = "Total speed = " + str(math.sqrt(self.player.speed.norm()**2))
         debug_string4 = "Location = " + str(self.player.position)
         text1 = font.render(debug_string1, True, WHITE)
-        text2 = font.render(debug_string2, True, WHITE)
+        #text2 = font.render(debug_string2, True, WHITE)
         text3 = font.render(debug_string3, True, WHITE)
         text4 = font.render(debug_string4, True, WHITE)
         screen.blit(text1, [0, 0])
-        screen.blit(text2, [0, 15])
+        #screen.blit(text2, [0, 15])
         screen.blit(text3, [0, 30])
         screen.blit(text4, [0, 45])
 

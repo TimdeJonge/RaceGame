@@ -1,5 +1,7 @@
 import pygame
 import math
+import numpy as np
+from Network import Network
 from Global import *
 from Vector import Vector
 
@@ -24,23 +26,46 @@ class Player:
         else:
             self.direction = math.atan(speed.values[1] / speed.values[0])
         self.bump = sounds
+        if not self.human:
+            self.network = Network([6,4,3])
 
-    def run_ai(self, level):
+    def run_ai(self, counter, level):
         self.speed_up = True
-        new_position = self.position + self.speed.scalar(100)
-        good_choice = True
-        for obstacle in level:
-            if obstacle.contains(new_position):
-                good_choice = False
-                break
-        if not good_choice:
-            self.turn = "right"
-        else:
-            self.turn = "neutral"
+        view = Vector([math.cos(self.direction), math.sin(self.direction)])
+        view_right = Vector([math.cos(self.direction + math.pi/6), 
+                            math.sin(self.direction + math.pi/6)])
+        view_left = Vector([math.cos(self.direction - math.pi/6), 
+                            math.sin(self.direction - math.pi/6)])
+        view_hardright = Vector([math.cos(self.direction + 2*math.pi/3), 
+                            math.sin(self.direction + 2*math.pi/3)])
+        view_hardleft = Vector([math.cos(self.direction - 2*math.pi/3), 
+                            math.sin(self.direction - 2*math.pi/3)])
+    
+        views = [view_hardleft, view_left, view, view_right, view_hardright]
+        if counter%5 == 0:
+            distances = [200 for _ in range(5)]
+            i = 5
+            while (i < 100): 
+                for j in range(len(views)):
+                    if i < distances[j]:
+                        new_position = self.position + views[j].scalar(i)
+                        for obstacle in level:
+                            if obstacle.contains(new_position):
+                                distances[j] = i 
+                i+= 5
+            distances.append(self.speed.norm())
+            result = self.network.feedforward(np.reshape(distances, (6,1))).argmax()
+            print(result)
+            if result == 0 : 
+                self.turn = "left"
+            elif result == 1:
+                self.turn = "neutral" 
+            else:
+                self.turn = "right"
 
     def update(self, counter, level):
         if not self.human:
-            self.run_ai(level)
+            self.run_ai(counter, level)
 
         if self.human == "test":
             if self.speed.values[0] <= 0:
@@ -54,7 +79,8 @@ class Player:
                     self.turn = "right"
                 else:
                     self.turn = "neutral"
-
+              
+                    
         if self.turn == "right":
             self.rotate(math.pi/120)
         elif self.turn == "left":
