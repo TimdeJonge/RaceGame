@@ -70,3 +70,5 @@ class Vector:
         parallel = (direction).projects(self)
         perpendicular = self - parallel
         return parallel, perpendicular
+
+#TODO: Write __getitem__.

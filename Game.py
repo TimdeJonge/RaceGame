@@ -1,5 +1,6 @@
 from Vector import Vector
 from Player import Player
+from Rectangle import Rectangle
 from Global import *
 import math
 import pygame
@@ -10,27 +11,44 @@ class Game(object):
     def __init__(self):
         # SETTINGS:
         self.debug = True
-        self.level = "L"
+        self.level = [[1 for _ in range(7)] for _ in range(7)]
+        for i in range(5):
+            for j in range(5):
+               self.level[j+1][i+1] = 0
+        self.level[3][3] = 1
+        self.level_width = len(self.level[0])
+        self.level_height = len(self.level)
+        self.obstacle_list = []
+        for i in range(self.level_width):
+            for j in range(self.level_height):
+                if self.level[j][i] == 1:
+                    self.obstacle_list.append(Rectangle((i*BLOCK_SIZE, j*BLOCK_SIZE), ((i+1)*BLOCK_SIZE, (j+1)*BLOCK_SIZE)))
 
+        
         # RELEVANT VALUES
         self.counter = 0
         self.sounds = self.init_sounds()
-        #self.player = Player(self.sounds, Vector([100,100]), Vector([1,0]), 5, PLAYER_COLOUR, True)
-        self.player_list = [Player(self.sounds, Vector([100, 100]), Vector([1, 0]), 5, BLACK) for i in range(5)]
+
+        self.player_list = [Player(self.sounds, Vector([150, 150]), Vector([1, 0]), 5, BLACK) for i in range(10)]
+        self.player_list[0] = Player(self.sounds, Vector([110,120]), Vector([1,0]), 5, PLAYER_COLOUR, True)
         self.player = self.player_list[0]
 
-        if self.level == "Baby Park":
-            self.obstacle_list = levels.baby_park
-        elif self.level == "Circles":
-            self.obstacle_list = levels.circles
-        elif self.level == "L":
-            self.obstacle_list = levels.l
-        elif self.level == "Clear":
-            self.obstacle_list = levels.clear
-        elif self.level == "Test":
-            self.obstacle_list = levels.test
-        elif self.level == "donut":
-            self.obstacle_list = levels.donut
+# =============================================================================
+#         if self.level == "Baby Park":
+#             self.obstacle_list = levels.baby_park
+#         elif self.level == "Circles":
+#             self.obstacle_list = levels.circles
+#         elif self.level == "L":
+#             self.obstacle_list = levels.l
+#         elif self.level == "Clear":
+#             self.obstacle_list = levels.clear
+#         elif self.level == "Test":
+#             self.obstacle_list = levels.test
+#         elif self.level == "donut":
+#             self.obstacle_list = levels.donut
+#         elif self.level == "test_block":
+#             self.obstacle_list = levels.test_block
+# =============================================================================
         self.turn = "neutral"
         self.acceleration = False
         self.brake = False
@@ -80,7 +98,7 @@ class Game(object):
     def draw_debug(self, screen):
         font = pygame.font.SysFont('Console', 20, False, False)
         pygame.draw.circle(screen, BLACK, [600, 400], 0)
-        debug_string1 = "direction = " + str(self.player.turn)
+        debug_string1 = "direction = " + str(self.player.direction)
         #debug_string2 = "y_speed = " + str(self.player.speed.values[1])
         debug_string3 = "Total speed = " + str(math.sqrt(self.player.speed.norm()**2))
         debug_string4 = "Location = " + str(self.player.position)

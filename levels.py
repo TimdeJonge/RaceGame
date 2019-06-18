@@ -35,3 +35,9 @@ donut = [Rectangle([-X, -X], [0, X]),
          Rectangle([2000, -X], [X,X]),
          Rectangle([-X, 2000], [X,X]),
          Circle((1000,1000), 500)]
+
+
+
+
+
+

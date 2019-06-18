@@ -2,7 +2,7 @@ import pygame
 import math
 import numpy as np
 from Network import Network
-from Global import *
+from Global import ACCELERATION_DEFAULT, PLAYER_COLOUR, FRAME_RATE, BLOCK_SIZE
 from Vector import Vector
 
 
@@ -66,19 +66,6 @@ class Player:
     def update(self, counter, level):
         if not self.human:
             self.run_ai(counter, level)
-
-        if self.human == "test":
-            if self.speed.values[0] <= 0:
-                print(self.position, self.speed, self.direction)
-                self.set_speed(0, 1)
-                self.speed_up = False
-                self.turn = "neutral"
-            else:
-                self.speed_up = True
-                if self.direction < math.pi:
-                    self.turn = "right"
-                else:
-                    self.turn = "neutral"
               
                     
         if self.turn == "right":
@@ -100,9 +87,15 @@ class Player:
 
     def move(self, obstacles):
         # TODO: Add particles behind the boat
-        for obstacle in obstacles:
-            self.check_collision(obstacle)
+# =============================================================================
+#         for obstacle in obstacles:
+#             self.check_collision(obstacle)
+# =============================================================================
+
         self.position += self.speed
+        x = self.position.values[0]//BLOCK_SIZE
+        y = self.position.values[1]//BLOCK_SIZE
+        
         if self.speed.norm() < 5:
             self.speed -= self.speed.scalar(0.01)
         else:
@@ -126,18 +119,6 @@ class Player:
     def brake(self):
         acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
         self.speed -= acceleration_vector
-
-    def old_turn(self, angle):
-        # In other words: Make the controls less wonky
-        # It is possible to move this to the Vector class, but since the Vector class might be used for Vectors
-        # with dimension > 3, this is undesirable.
-        if self.speed.values != [0, 0]:
-            cos_theta = math.cos(angle)
-            sin_theta = math.sin(angle)
-            x_speed = (cos_theta*self.speed.values[0] - sin_theta*self.speed.values[1])
-            y_speed = (sin_theta*self.speed.values[0] + cos_theta*self.speed.values[1])
-            self.speed.values[0] = x_speed
-            self.speed.values[1] = y_speed
 
     def rotate(self, angle):
         self.direction += angle
