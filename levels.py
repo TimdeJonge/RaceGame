@@ -1,6 +1,9 @@
+
 from Polygon import Polygon
 from Circle import Circle
 from Rectangle import Rectangle
+
+#Legacy code, to be removed upon completion of new map builder
 X = 10000
 baby_park = [Polygon([(400, 150), (800, 150), (1000, 300), (1000, 500),
                       (800, 650), (400, 650), (200, 500), (200, 300)]),

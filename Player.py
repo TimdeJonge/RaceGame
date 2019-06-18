@@ -4,7 +4,7 @@ import numpy as np
 from Network import Network
 from Global import ACCELERATION_DEFAULT, PLAYER_COLOUR, FRAME_RATE, BLOCK_SIZE
 from Vector import Vector
-
+from Rectangle import Rectangle
 
 class Player:
     def __init__(self, sounds, position=Vector([0, 0]), speed=Vector([0, 0]), radius=5, colour=PLAYER_COLOUR, human=False):
@@ -67,7 +67,7 @@ class Player:
         if not self.human:
             self.run_ai(counter, level)
               
-                    
+        #Handling of human input            
         if self.turn == "right":
             self.rotate(math.pi/120)
         elif self.turn == "left":
@@ -79,27 +79,37 @@ class Player:
             if self.speed.norm() != 0:
                 self.brake()
         if self.speed_boost:
-            self.speed_boost_counter = counter
+            self.speed_boost_ounter = counter
             self.acceleration = 3*ACCELERATION_DEFAULT
             self.speed_boost = False
         if counter - self.speed_boost_counter == .5*FRAME_RATE:
             self.acceleration = ACCELERATION_DEFAULT
 
-    def move(self, obstacles):
-        # TODO: Add particles behind the boat
-# =============================================================================
-#         for obstacle in obstacles:
-#             self.check_collision(obstacle)
-# =============================================================================
+    def accelerate(self):
+        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
+        self.speed += acceleration_vector
 
-        self.position += self.speed
-        x = self.position.values[0]//BLOCK_SIZE
-        y = self.position.values[1]//BLOCK_SIZE
+    def brake(self):
+        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
+        self.speed -= acceleration_vector
+
+    def rotate(self, angle):
+        self.direction += angle
         
+    def move(self, obstacles, level):
+        # TODO: Add particles behind the boat
+        new_position = self.position + self.speed
+        x = int(new_position.values[0]//BLOCK_SIZE)
+        y = int(new_position.values[1]//BLOCK_SIZE)
+        if level[x][y] == 1: 
+            #TODO: Base on line rather than object
+            Rectangle((x*BLOCK_SIZE, y*BLOCK_SIZE), ((x+1)*BLOCK_SIZE, (y+1)*BLOCK_SIZE)).handle_collision(self)
+        self.position = self.position + self.speed
         if self.speed.norm() < 5:
             self.speed -= self.speed.scalar(0.01)
         else:
             self.speed -= self.speed.scalar(.0025*self.speed.norm())
+        
 
     def check_collision(self, obstacle):
         new_position = self.position + self.speed
@@ -112,16 +122,6 @@ class Player:
         self.speed.values[0] = x_speed
         self.speed.values[1] = y_speed
 
-    def accelerate(self):
-        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
-        self.speed += acceleration_vector
-
-    def brake(self):
-        acceleration_vector = Vector((math.cos(self.direction), math.sin(self.direction))).scalar(self.acceleration)
-        self.speed -= acceleration_vector
-
-    def rotate(self, angle):
-        self.direction += angle
 
     def restart(self, position, speed):
         self.position = position
