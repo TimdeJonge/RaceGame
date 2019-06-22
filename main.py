@@ -1,5 +1,5 @@
 from Game import Game
-from Global import *
+from Global import SCREEN_HEIGHT, SCREEN_WIDTH, FRAME_RATE
 import pygame
 
 
@@ -15,7 +15,7 @@ def main():
     done = False
 
     game = Game()
-
+    
     while not done:
         done = game.process_events()
 

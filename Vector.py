@@ -24,11 +24,14 @@ class Vector:
 
     def __str__(self):
         return str(self.values)
+    
+    def __getitem__(self, n):
+        return self.values.__getitem__(n)
 
     def linear_combination(self, other, alpha, beta):
         result = []
         for i in range(self.amount):
-            result.append(self.values[i]*alpha + other.values[i]*beta)
+            result.append(self[i]*alpha + other[i]*beta)
         return Vector(self.amount, result)
 
     def scalar(self, alpha):
@@ -40,7 +43,7 @@ class Vector:
     def inner(self, other):
         result = 0
         for i in range(self.amount):
-            result += self.values[i]*other.values[i]
+            result += self[i]*other[i]
         return result
 
     def norm(self):
@@ -50,7 +53,7 @@ class Vector:
         return self.scalar(other.inner(self)/self.inner(self))
 
     def distance_to_line(self, point_a, point_b):
-        v = Vector(2, [point_b.values[1] - point_a.values[1], point_a.values[0] - point_b.values[0]])
+        v = Vector(2, [point_b[1] - point_a[1], point_a[0] - point_b[0]])
         r = point_a - self
         return v.inner(r) / v.norm()
 
@@ -71,4 +74,4 @@ class Vector:
         perpendicular = self - parallel
         return parallel, perpendicular
 
-#TODO: Write __getitem__.
+
