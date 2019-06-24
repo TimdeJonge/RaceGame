@@ -18,5 +18,3 @@ class Polygon:
             draw_vector = vector - camera
             draw_list.append(draw_vector)
         pygame.draw.polygon(screen, self.colour, draw_list)
-
-poly = Polygon(((0, 0), (200, 0), (200, 200), (0, 200)))

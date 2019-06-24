@@ -1,7 +1,3 @@
-#### Libraries
-# Standard library
-import random
-
 # Third-party libraries
 import numpy as np
 
@@ -19,18 +15,17 @@ class Network(object):
             a = sigmoid(np.dot(w, a)+b)
         return a
     
-    def mutate_weight(self, size):
-        array_shape = self.weights[0].shape
-        x_change = random.choice(range(0,array_shape[0]))
-        y_change = random.choice(range(0,array_shape[1]))
-        self.weights[0][x_change][y_change] += random.choice([-1,1])*size
+    def procreate(self, mutate_chance, random_chance):
+        for i in range(len(self.weights)):
+            array_shape = self.weights[i].shape
+            for y in range(array_shape[0]):
+                for x in range(array_shape[1]):
+                    odds = np.random.uniform()
+                    if odds < mutate_chance:
+                        self.weights[i][y,x] += np.random.uniform() - 0.5
+                    elif odds < mutate_chance + random_chance:
+                        self.weights[i][y,x] = np.random.randn()
         
-        
-    def random_weight(self):
-        array_shape = self.weights[0].shape
-        x_change = random.choice(range(0,array_shape[0]))
-        y_change = random.choice(range(0,array_shape[1]))
-        self.weights[0][x_change][y_change] = random.uniform(-1,1)
         
 
 def sigmoid(z):
