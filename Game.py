@@ -1,35 +1,29 @@
 import numpy as np
 from Player import Player
-from Global import BLOCK_SIZE, BLACK, PLAYER_COLOUR, SCREEN_WIDTH, SCREEN_HEIGHT
-from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, BLUE, GREEN
+from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
+from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
 from Network import Network
-from Food import Food
-from levels import box, level, create_obstacles
+from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
 from copy import deepcopy
 import pygame
 
 
 class Game(object):
     def __init__(self):
-        self.debug = False
-        self.level = level
+        self.debug = True
+        self.level = turny
         self.obstacle_list = create_obstacles(self.level)
-        self.checkpoints = [[(BLOCK_SIZE, BLOCK_SIZE), (2*BLOCK_SIZE, 2*BLOCK_SIZE)],
-                      [(5*BLOCK_SIZE, BLOCK_SIZE),(5*BLOCK_SIZE, 2*BLOCK_SIZE)],
-                       [(6*BLOCK_SIZE, 4*BLOCK_SIZE),(7*BLOCK_SIZE, 5*BLOCK_SIZE)],
-                       [(3*BLOCK_SIZE,4*BLOCK_SIZE), (4*BLOCK_SIZE,3*BLOCK_SIZE)]]
+        self.checkpoints = turny_checkpoints
         self.counter = 0
+        self.generation = 0
         self.sounds = self.init_sounds()
-        self.player_list = [Player(np.array([4.5*BLOCK_SIZE, 1.6*BLOCK_SIZE]), 
-                                   np.array([1.0, 0.05]), 5, BLACK, 
-                                   Network([6,4,3])) for i in range(50)]
-        #self.player_list[0] = Player(np.array([4.5*BLOCK_SIZE, 1.6*BLOCK_SIZE]), np.array([1.0,0.01]), 5, PLAYER_COLOUR)
+        self.player_list = [Player() for _ in range(PLAYER_AMOUNT)]
+        self.network_list = [Network([6,4,4,3]) for _ in range(PLAYER_AMOUNT)]
         self.player = self.player_list[0]
         self.turn = "neutral"
         self.acceleration = False
         self.brake = False
         self.camera = self.player.position - np.array([SCREEN_WIDTH/2, SCREEN_HEIGHT/2])
-        #self.food = Food(800, 800, 1400, 1000)
 
     def process_events(self):
         """Handles all user inputs. Returns boolean "done" """
@@ -47,13 +41,16 @@ class Game(object):
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                     self.player.speed_down = True
                 elif event.key == pygame.K_r:
-                    self.player.restart(np.array([300, 300]), np.array([1.0, 1.0]))
+                    pass
+                    #self.player.restart(np.array([300, 300]), np.array([1.0, 1.0]))
                 elif event.key == pygame.K_SPACE:
                     self.player.speed_boost = True
+                elif event.key == pygame.K_d:
+                    self.debug = not self.debug
                 elif event.key == pygame.K_f:
-                    self.reproduce(1)
+                    self.reproduce()
                 elif event.key == pygame.K_p:
-                    self.player_list[-1].network = "human"
+                    self.player_list[-1].human = True
                     self.player = self.player_list[-1]
                     self.player_list[-1].colour = WHITE
 
@@ -68,56 +65,51 @@ class Game(object):
 
     def update(self):
         self.counter += 1
-        if not self.counter%(90*FRAME_RATE):
-            generation = self.counter // (90*FRAME_RATE)
-# =============================================================================
-#             if generation%2:
-#                 self.food = Food(200,200,600,800)
-#             else:
-#                 self.food = Food(800, 800, 1400, 1000)
-# =============================================================================
-            self.reproduce(generation)
+        if not self.counter%(GENERATION_TIME*FRAME_RATE):
+            self.reproduce()
             #self.food.radius = max(30, self.food.radius)
-        for player in self.player_list:
-            player.update(self.obstacle_list, self.level, self.checkpoints)
+        for i in range(len(self.player_list)):
+            if not self.player_list[i].human:    
+                self.network_list[i].run_ai(self.player_list[i], self.obstacle_list, self.level)
+            self.player_list[i].update(self.obstacle_list, self.level, self.checkpoints, self.counter)
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
         # Just subtract self.camera from everything that needs to be drawn on screen and it will work.
-# =============================================================================
-#         self.camera = (self.camera*(19) +
-#                        self.player.position -
-#                        np.array([SCREEN_WIDTH/2, SCREEN_HEIGHT/2]) +
-#                        self.player.speed*(40))*(.05)
-# 
-# =============================================================================
-        self.camera =np.array([200,200])
-        
-    def get_fitness(self, player):
-        return player.fitness
-    
-    def reproduce(self, generation):
-        print("THEY FUUUUUUUUUCKED")
-        self.player_list.sort(key = self.get_fitness, reverse = True)
-        self.player = self.player_list[0]
-        del self.player_list[5:]
-        for player in self.player_list:
-            player.checkpoint = 2
-            player.fitness = 0
-            player.position = np.array([4.5*BLOCK_SIZE, 1.6*BLOCK_SIZE])
-            player.speed = np.array([1.0, 0.01])
-        for i in range(len(self.player_list)):
-            if self.player_list[i].network != "human":
-                for _ in range(8-i):
-                    fitwork = deepcopy(self.player_list[i].network)
-                    if generation > 3: 
-                        generation = 3
-                    fitwork.procreate(.6/(generation+1),.3/(generation+1))
+        self.camera = (self.camera*(19) +
+                       self.player.position -
+                       np.array([SCREEN_WIDTH/2, SCREEN_HEIGHT/2]) +
+                       self.player.speed*(40))*(.05)
 
-                    self.player_list.append(Player(np.array([4.5*BLOCK_SIZE, 1.6*BLOCK_SIZE]),
-                                       np.array([1.0, 0.01]), 5, BLACK, 
-                                       fitwork))
-        self.player_list[0].colour = BLUE
+    
+    def reproduce(self):
+        self.generation += 1
+        if self.generation%2:
+            self.level = turny
+            self.obstacle_list = create_obstacles(self.level)
+            self.checkpoints = turny_checkpoints
+        else:
+            self.level = level
+            self.obstacle_list = create_obstacles(self.level)
+            self.checkpoints = level_checkpoints
+        for i in range(len(self.player_list)):
+            self.network_list[i].fitness = (self.player_list[i].fitness + self.network_list[i].fitness)/2
+            self.network_list[i].last_checkpoint = self.player_list[i].last_checkpoint
+        self.network_list.sort(key = lambda x: (-x.fitness, x.last_checkpoint))
+        del self.network_list[10:]
+        print(self.network_list[0].weights)
+        for i in range(len(self.network_list)):
+            self.network_list[i].fitness = 0
+            for _ in range(4):
+                fitwork = deepcopy(self.network_list[i])
+                if self.generation < 4: 
+                    fitwork.procreate(2/(self.generation+1),.3/(self.generation+1))
+                else:
+                    fitwork.procreate(.7,.1)
+                self.network_list.append(fitwork)
+        self.player_list = [Player() for _ in range(30)]
+        self.player = self.player_list[0]
+        self.player_list[0].colour = RED
         self.player_list[1].colour = GREEN
-        
+
     def draw_debug(self, screen):
         """Draws debug strings. Contents can be varied in the initial string.
         :param screen      the screen on which to draw debug""" 
@@ -132,8 +124,9 @@ class Game(object):
         screen.blit(text1, [0, 0])
         screen.blit(text3, [0, 30])
         screen.blit(text4, [0, 45])
-        pygame.draw.line(screen, BLACK, np.array(self.checkpoints[self.player.checkpoint][0]) - self.camera,
-                         np.array(self.checkpoints[self.player.checkpoint][1]) - self.camera)
+        for checkpoint in self.checkpoints:
+            pygame.draw.line(screen, BLACK, np.array(checkpoint[0])- self.camera,
+                         np.array(checkpoint[1])- self.camera)
 
     def draw_screen(self, screen):
         """Calls all draw methods.
@@ -157,7 +150,7 @@ class Game(object):
         :type counter       int
         """
         font = pygame.font.SysFont('Console', 20, False, False)
-        total_seconds = 90-(counter // FRAME_RATE)%90 
+        total_seconds = GENERATION_TIME-(counter // FRAME_RATE)%GENERATION_TIME 
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         output_string = "Time: {0:02}:{1:02}".format(minutes, seconds)
