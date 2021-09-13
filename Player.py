@@ -18,7 +18,7 @@ class Player:
         self.colour = colour
         self.radius = radius
         self.turn = "neutral"
-        self.speed_up = True
+        self.speed_up = False
         self.speed_down = False
         self.speed_boost = False
         self.speed_boost_counter = -5000
@@ -30,7 +30,7 @@ class Player:
         if self.speed[0] == 0 and self.speed[1] >= 0:
             self.direction = math.pi / 2
         elif self.speed[0] == 0 and self.speed[1] < 0:
-            self.direction = - math.pi / 2
+            self.direction = - math.pi / 2  
         else:
             self.direction = math.atan(self.speed[1] / self.speed[0])
 
@@ -51,12 +51,12 @@ class Player:
         view_right = np.array([math.cos(self.direction - math.pi/6), math.sin(self.direction - math.pi/6)])
         view_sharpleft = np.array([math.cos(self.direction + math.pi/2), math.sin(self.direction + math.pi/2)])
         view_sharpright = np.array([math.cos(self.direction - math.pi/2), math.sin(self.direction - math.pi/2)])
-        distances = np.array((self.ray(self, view, obstacles, level),
-                              self.ray(self, view_left, obstacles, level),
-                              self.ray(self, view_right, obstacles, level),
-                              self.ray(self, view_sharpleft, obstacles, level),
-                              self.ray(self, view_sharpright, obstacles, level),
-                              np.linalg.norm(self.speed))).reshape([6,1])
+        distances = np.array((self.ray(view, obstacles, level),
+                              self.ray(view_left, obstacles, level),
+                              self.ray(view_right, obstacles, level),
+                              self.ray(view_sharpleft, obstacles, level),
+                              self.ray(view_sharpright, obstacles, level),
+                              np.linalg.norm(self.speed)))
         return distances
 
     def ray(self, view, obstacles, level):
@@ -78,7 +78,7 @@ class Player:
                         if distance < minimum:
                             minimum = distance
                 if minimum < 2*BLOCK_SIZE:
-                    return minimum
+                    return 1 - (minimum / (2*BLOCK_SIZE)) 
             #TODO: Fix repeated code
             points = [(x*BLOCK_SIZE, y*BLOCK_SIZE),
                       ((x+1)*BLOCK_SIZE, y*BLOCK_SIZE),
@@ -101,7 +101,7 @@ class Player:
                 y += 1
             else:
                 x -= 1
-        return 2*BLOCK_SIZE
+        return 0
 
     def move(self, obstacles, level, checkpoints, counter):
         new_position = self.position + self.speed + self.speed/np.linalg.norm(self.speed)*5
@@ -119,7 +119,6 @@ class Player:
         if intersect([self.position, new_position], checkpoints[self.checkpoint]):
             self.fitness += 1
             self.last_checkpoint = counter
-            print(self.fitness)
             self.checkpoint = (self.checkpoint + 1) % len(checkpoints)
 
     def accelerate(self, pace):

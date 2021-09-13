@@ -2,8 +2,8 @@ import numpy as np
 from Player import Player
 from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
-from Network import Network
 from neuralNet import AI_network
+import pandas as pd
 from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
 from copy import deepcopy
 import pygame
@@ -19,7 +19,14 @@ class Game(object):
         self.generation = 0
         self.sounds = self.init_sounds()
         self.player_list = [Player() for _ in range(PLAYER_AMOUNT)]
-        self.network_list = [Network([6,4,4,3]) for _ in range(PLAYER_AMOUNT)] #TODO: Translate to AI_Network
+        self.network_list = [AI_network() for _ in range(PLAYER_AMOUNT)]
+        self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
+        self.total_nodes = 9
+        for network in self.network_list:
+            network.create_network(6,2,self.innovation_df)
+            for _ in range(10):
+                self.innovation_df, self.total_nodes = network.procreate(self.innovation_df, self.total_nodes)
+            network.build(self.total_nodes)
         self.player = self.player_list[0]
         self.turn = "neutral"
         self.acceleration = False
@@ -71,9 +78,21 @@ class Game(object):
             #self.food.radius = max(30, self.food.radius)
         for i in range(len(self.player_list)):
             if not self.player_list[i].human:
-                distances = self.player_list[i].observe(self.obstacle_list, self.level)    
-                result = self.network_list[i].run_ai(distances)
-                #TODO: Steering dependent on model output
+                distances = self.player_list[i].observe(self.obstacle_list, self.level) 
+                network = self.network_list[i]   
+                network.run_live(distances)
+                if network.state[6] < -0.2: 
+                    self.player_list[i].speed_down = True 
+                    self.player_list[i].speed_up = False
+                elif network.state[6] > 0:
+                    self.player_list[i].speed_down = False
+                    self.player_list[i].speed_up = True
+                if network.state[7] > 0.1:
+                    self.player_list[i].turn = 'right'
+                elif network.state[7] < -0.1:
+                    self.player_list[i].turn = 'left'
+                else: 
+                    self.player_list[i].turn = 'neutral'
             self.player_list[i].update(self.obstacle_list, self.level, self.checkpoints, self.counter)
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
         # Just subtract self.camera from everything that needs to be drawn on screen and it will work.
@@ -98,15 +117,12 @@ class Game(object):
             self.network_list[i].last_checkpoint = self.player_list[i].last_checkpoint
         self.network_list.sort(key = lambda x: (-x.fitness, x.last_checkpoint))
         del self.network_list[10:]
-        print(self.network_list[0].weights)
+        #print(self.network_list[0].weights)
         for i in range(len(self.network_list)):
             self.network_list[i].fitness = 0
             for _ in range(4):
                 fitwork = deepcopy(self.network_list[i])
-                if self.generation < 4: 
-                    fitwork.procreate(2/(self.generation+1),.3/(self.generation+1))
-                else:
-                    fitwork.procreate(.7,.1)
+                self.innovation_df, self.total_nodes = fitwork.procreate(self.innovation_df, self.total_nodes)
                 self.network_list.append(fitwork)
         self.player_list = [Player() for _ in range(30)]
         self.player = self.player_list[0]
@@ -118,13 +134,16 @@ class Game(object):
         :param screen      the screen on which to draw debug""" 
         font = pygame.font.SysFont('Console', 20, False, False)
         pygame.draw.circle(screen, BLACK, [600, 400], 0)
-        debug_string1 = "direction = " + str(self.player.direction)
+        debug_string1 = "distances = " + str(self.player.observe(self.obstacle_list, self.level))
+        debug_string2 = "aim = " + str(self.player.turn)
         debug_string3 = "Total speed = " + str(np.linalg.norm(self.player.speed))
         debug_string4 = "Location = " + str(self.player.position)
         text1 = font.render(debug_string1, True, WHITE)
+        text2 = font.render(debug_string2, True, WHITE)    
         text3 = font.render(debug_string3, True, WHITE)
         text4 = font.render(debug_string4, True, WHITE)
         screen.blit(text1, [0, 0])
+        screen.blit(text2, [0, 15])
         screen.blit(text3, [0, 30])
         screen.blit(text4, [0, 45])
         for checkpoint in self.checkpoints:

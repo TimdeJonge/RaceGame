@@ -1,3 +1,4 @@
+#%%
 from Game import Game
 from Global import SCREEN_HEIGHT, SCREEN_WIDTH, FRAME_RATE
 import pygame
@@ -21,9 +22,7 @@ def main():
 
         game.update()
         game.draw_screen(screen)
-
         pygame.display.flip()
-
         clock.tick(FRAME_RATE)  
     pygame.quit()
 
@@ -31,3 +30,4 @@ def main():
 if __name__ == "__main__":
     main()
     
+# %%

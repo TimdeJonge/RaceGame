@@ -2,7 +2,6 @@
 import numpy as np
 import pandas as pd
 import random
-from random import sample
 import os
 # TODO :
 # From input node to final node
@@ -26,10 +25,11 @@ def filter_dict(nodes, filter_string):
 class AI_network():
     def __init__(self,  verbose=False):
         self.verbose = verbose
+        self.fitness = 0
         self.results = []
         self.order = []
     
-    def create_network(self, n_inputs_nodes, n_output_nodes, innovation_df):
+    def create_network(self, n_inputs_nodes, n_output_nodes, innovation_df_g):
         # How many nodes should be created
         count_input = n_inputs_nodes 
         count_output = count_input + n_output_nodes
@@ -42,7 +42,7 @@ class AI_network():
             else:
                 node_type = 'Output'
             node_dict[f'{i}'] =  node_type
-        node_dict[total_nodes] =  'Bias' # Bias node
+        node_dict[str(total_nodes)] =  'Bias' # Bias node
         self.nodes = node_dict
         
         # Empty dataframe
@@ -51,32 +51,26 @@ class AI_network():
 
         # Create one random connection from input or bias to output
 
-        innovation_df = self.add_connection(innovation_df)
+        innovation_df_g = self.add_connection(innovation_df_g)
 
         output_list = []
         for output_node in filter_dict(node_dict, 'Output'):
             output_list.append(int(output_node))
         self.order = output_list
 
-        return innovation_df
+        return innovation_df_g
 
-    def add_hidden_node(self, innovation_df, N_total_nodes):
+    def add_hidden_node(self, innovation_df_g, N_total_nodes):
         nodes = self.nodes
         connections = self.connections
         order = self.order 
 
-        # Select random connection that is not bias
-        for bias_node in filter_dict(nodes, 'Bias'):
-            pass
-
-        rand_connection = connections.loc[(connections['From_node'] != bias_node) & 
-                                            (connections['Enabled'] == True)].sample().index[0]
-        
-        # Disable old connection 
+        # Select random connection
+        rand_connection = connections.loc[(connections['Enabled'] == True)].sample().index[0]                          
         connections.loc[rand_connection,'Enabled'] = False
 
         # create hidden node
-        new_node_number = N_total_nodes + 1
+        new_node_number = N_total_nodes 
         node_type = 'Hidden'
         nodes[f'{new_node_number}'] =  node_type
         if self.verbose:
@@ -87,10 +81,10 @@ class AI_network():
         To_node = new_node_number
         connection_weight = connections.loc[rand_connection, 'Weight']
 
-        innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
-                                            'Innovation_number' : len(innovation_df)}, 
+        innovation_df_g = innovation_df_g.append({'Abbrev' : f'{From_node}-{To_node}', 
+                                            'Innovation_number' : len(innovation_df_g)}, 
                                                 ignore_index=True)
-        innovation_counter = innovation_df.loc[innovation_df['Abbrev'] == f'{From_node}-{To_node}',
+        innovation_counter = innovation_df_g.loc[innovation_df_g['Abbrev'] == f'{From_node}-{To_node}',
                                                 'Innovation_number'].values[0]
         connections =connections.append({'From_node' : int(From_node), 
                                         'To_node': int(To_node),  
@@ -104,16 +98,14 @@ class AI_network():
         if self.verbose:
             print(f'Connection from: {From_node} to {To_node}')
 
-        
         # Connection hidden to
         From_node = new_node_number
         To_node = connections.loc[rand_connection, 'To_node']
         connection_weight = 1
-
-        innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
-                                            'Innovation_number' : len(innovation_df)}, 
+        innovation_df_g = innovation_df_g.append({'Abbrev' : f'{From_node}-{To_node}', 
+                                            'Innovation_number' : len(innovation_df_g)}, 
                                                 ignore_index=True)
-        innovation_counter = innovation_df.loc[innovation_df['Abbrev'] == f'{From_node}-{To_node}',
+        innovation_counter = innovation_df_g.loc[innovation_df_g['Abbrev'] == f'{From_node}-{To_node}',
                                                 'Innovation_number'].values[0]
         connections =connections.append({'From_node' : int(From_node), 
                                         'To_node': int(To_node),  
@@ -131,9 +123,9 @@ class AI_network():
         self.nodes = nodes
         self.connections = connections 
         N_total_nodes += 1
-        return innovation_df, N_total_nodes
+        return innovation_df_g, N_total_nodes
 
-    def add_connection(self, innovation_df):
+    def add_connection(self, innovation_df_g):
         nodes = self.nodes
         connections = self.connections
 
@@ -157,19 +149,19 @@ class AI_network():
 
             if (connections.loc[(connections['From_node'] == From_node) & (connections['To_node'] == To_node)].empty) == True:
                 connection_weight = np.random.randn()
-                if  innovation_df['Abbrev'].str.contains(f'{From_node}-{To_node}').any():
+                if  innovation_df_g['Abbrev'].str.contains(f'{From_node}-{To_node}').any():
                     try: # The above if statement will also be true if '8-0' == '28-0'
-                        innovation_df.loc[innovation_df['Abbrev'] == f'{From_node}-{To_node}',
+                        innovation_df_g.loc[innovation_df_g['Abbrev'] == f'{From_node}-{To_node}',
                                                         'Innovation_number'].values[0]
                     except IndexError:
-                        innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
-                                'Innovation_number' : len(innovation_df)}, 
+                        innovation_df_g = innovation_df_g.append({'Abbrev' : f'{From_node}-{To_node}', 
+                                'Innovation_number' : len(innovation_df_g)}, 
                                     ignore_index=True) 
                 else:
-                    innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
-                            'Innovation_number' : len(innovation_df)}, 
+                    innovation_df_g = innovation_df_g.append({'Abbrev' : f'{From_node}-{To_node}', 
+                            'Innovation_number' : len(innovation_df_g)}, 
                                 ignore_index=True)
-                innovation_counter = innovation_df.loc[innovation_df['Abbrev'] == f'{From_node}-{To_node}',
+                innovation_counter = innovation_df_g.loc[innovation_df_g['Abbrev'] == f'{From_node}-{To_node}',
                                                         'Innovation_number'].values[0]
                 connections =connections.append({'From_node' : From_node, 
                                                 'To_node': To_node,  
@@ -191,7 +183,7 @@ class AI_network():
                     break
 
         self.connections = connections 
-        return innovation_df
+        return innovation_df_g
 
     def mutate_weight_big(self, amount = 1):
         connections = self.connections
@@ -271,9 +263,9 @@ class AI_network():
 
         self.connections = connections 
 
-    def build(self):
-        self.state = np.ones(len(self.nodes))
-        self.weights = np.zeros((len(self.nodes), len(self.nodes)))
+    def build(self, total_nodes):
+        self.state = np.ones(total_nodes+1)
+        self.weights = np.zeros((total_nodes+1, total_nodes+1))
         for _, row in self.connections.loc[self.connections['Enabled']].iterrows():
             self.weights[row['From_node'], row['To_node']] = row['Weight']
 
@@ -291,6 +283,23 @@ class AI_network():
         for node in self.order:
             self.state[node] = sigmoid(np.dot(self.weights[:,node], self.state))
 
+    def procreate(self, innovation_df_g, total_nodes):
+        for _ in range(5):
+            if random.random() < 0.9:
+                self.mutate_weight_small()
+        if random.random() < 0.4:
+            innovation_df_g=self.add_connection(innovation_df_g)
+        if random.random() < 0.1:
+            innovation_df_g, total_nodes=self.add_hidden_node(innovation_df_g, total_nodes)
+        if random.random() < 0.1:
+            self.disable_connection()
+        if random.random() < 0.2:
+            self.enable_connection()
+        if random.random() < 0.3:
+            self.mutate_weight_big()
+        self.build(total_nodes)
+        return innovation_df_g, total_nodes
+
 #%% 
 class reproduction:
     def combine(network1, network2, verbose = False):
@@ -298,37 +307,55 @@ class reproduction:
         connections2 = network2.connections
 
         # Only use enabled connections
-        connections1 = connections1.loc[connections1['Enabled'] == True]
-        connections2 = connections2.loc[connections2['Enabled'] == True]
+        # connections1 = connections1.loc[connections1['Enabled'] == True]
+        # connections2 = connections2.loc[connections2['Enabled'] == True]
 
         # Connections that both networks have in common
-        new_connections = connections1.loc[connections1['Innovation_number'].isin(connections2['Innovation_number'])]
-        
+        double_connections = connections1.loc[connections1['Innovation_number'].isin(connections2['Innovation_number'])]
+        double_connections.loc[:,'rand_num'] = np.random.randint(1,3, double_connections.shape[0])
+
+        innov1 = double_connections.loc[(double_connections['rand_num'] == 1), 'Innovation_number']
+        double_con1 = connections1.loc[connections1['Innovation_number'].isin(innov1)]
+
+        innov2 = double_connections.loc[(double_connections['rand_num'] == 2), 'Innovation_number']
+        double_con2 = connections2.loc[connections2['Innovation_number'].isin(innov2)]
+
+        new_connections = pd.concat((double_con1,double_con2))
+
         # Find connections that are not yet in new connections
-        connections1 = connections1.loc[~connections1['Innovation_number'].isin(new_connections['Innovation_number'])]
+        connections1_notin = connections1.loc[~connections1['Innovation_number'].isin(new_connections['Innovation_number'])]
 
         # Randomly add connections that were not in both networks
-        random_num = random.randint(0,len(connections1))
+        random_num = random.randint(0,len(connections1_notin))
         try:
-            add_connections = connections1.sample(random_num)
+            add_connections = connections1_notin.sample(random_num)
         except ValueError:
             if verbose:
                 print('No value to add')
         new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
 
         # Same story
-        connections2 = connections2.loc[~connections2['Innovation_number'].isin(new_connections['Innovation_number'])]
+        connections2_notin = connections2.loc[~connections2['Innovation_number'].isin(new_connections['Innovation_number'])]
         random_num = random.randint(0,len(connections2))
         try:
-            add_connections = connections2.sample(random_num)
+            add_connections = connections2_notin.sample(random_num)
         except ValueError:
             if verbose:
                 print('No value to add')
         new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
 
-        # Some functions that defines the order and the nodes
+        # Set new nodes
+        new_nodes = network1.nodes
+        new_nodes.update(network2.nodes)
 
-        return new_connections
+        new_order = np.unique(np.concatenate((network1.order, network2.order)))
+
+        new_network = AI_network(verbose = verbose)
+        new_network.connections = new_connections
+        new_network.nodes = new_nodes
+        new_network.order = new_order
+
+        return new_network
 
     def speciate(population):
         # Some code to differentiate between networks
@@ -336,7 +363,7 @@ class reproduction:
         # Some code to assign a species number to members
         return population
 
-#%% Neural network
+#%% Neural network 
 if __name__ == '__main__':
     symbol = 'BTCEUR'
     markets = os.listdir('Data new/')
@@ -345,8 +372,8 @@ if __name__ == '__main__':
     metrics = df.loc[:,'STD24':] #FIXME: Hard-coding this is scary
     norm_metrics = ((metrics - metrics.mean()) / metrics.std())
     df=df.loc[:, 'Timestamp':'symbol'].join(norm_metrics)
-    innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
-    
+    innovation_df_g = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
+
     df = df.loc[500:,:]
     batchSize = 100
     trainingsdata = df.iloc[:batchSize, 5:9]
@@ -359,35 +386,59 @@ if __name__ == '__main__':
     network1 = AI_network(verbose = True)
     network2 = AI_network(verbose = True)
 
-    N_total_nodes = N_inputs + N_output_nodes
-    innovation_df = network1.create_network(N_inputs, N_output_nodes, innovation_df)
-    print(innovation_df)
+    N_total_nodes = N_inputs + N_output_nodes + 1
+    innovation_df_g, nodes_dict_g = network1.create_network(N_inputs, N_output_nodes, innovation_df_g) # DF to keep track of all innovation numbers
+    # print(innovation_df_g)
+    # print(nodes_dict_g)
+    # print(network1.nodes)
+    # print(network1.connections)
+    # print(network1.order)
+
+    innovation_df_g, nodes_dict_g = network2.create_network(N_inputs, N_output_nodes, innovation_df_g) # DF to keep track of all innovation numbers
+    # print(innovation_df_g)
+    # print(nodes_dict_g)
+    # print(network2.nodes)
+    # print(network2.connections)
+    # print(network2.order)
+
+    innovation_df_g, nodes_dict_g, N_total_nodes = network1.add_hidden_node(innovation_df_g, nodes_dict_g, N_total_nodes)
+    print(innovation_df_g)
+    print(nodes_dict_g)
     print(network1.nodes)
     print(network1.connections)
     print(network1.order)
 
-    innovation_df = network2.create_network(N_inputs, N_output_nodes, innovation_df )
-    print(innovation_df)
-    print(network2.nodes)
+    innovation_df_g, nodes_dict_g, N_total_nodes = network2.add_hidden_node(innovation_df_g, nodes_dict_g, N_total_nodes)
+    print(innovation_df_g)
+    print(f'Global nodes dict:  {nodes_dict_g}')
+
     print(network2.connections)
     print(network2.order)
+    print(network2.nodes)
 
-    innovation_df,N_total_nodes = network2.add_hidden_node(innovation_df, N_total_nodes)
-    print(innovation_df)
+
+    innovation_df_g = network2.add_connection(innovation_df_g)
+    print(innovation_df_g)
     print(network2.nodes)
     print(network2.connections)
-    print(network2.order)
 
-    innovation_df,N_total_nodes = network2.add_hidden_node(innovation_df, N_total_nodes)
-    print(innovation_df)
-    print(network2.nodes)
-    print(network2.connections)
-    print(network2.order)
+    innovation_df_g,N_total_nodes = network1.add_hidden_node(innovation_df_g, N_total_nodes)
+    print(innovation_df_g)
+    print(network1.nodes)
+    print(network1.connections)
+    print(network1.order)
 
-    innovation_df = network2.add_connection(innovation_df)
-    print(innovation_df)
-    print(network2.nodes)
-    print(network2.connections)
+    innovation_df_g = network1.add_connection(innovation_df_g)
+    print(innovation_df_g)
+    print(network1.nodes)
+    print(network1.connections)
+
+
+    new_network = reproduction.combine(network1, network2)
+    print(new_network.nodes)
+    print(new_network.connections)
+    print(new_network.order)
+
 
     network1.mutate_weight_small(amount = 10)
     print(network1.connections)
@@ -402,7 +453,8 @@ if __name__ == '__main__':
     network1.enable_connection(amount = 1)
     print(network1.connections)
 
-    network1.build()
+
+    network1.build(N_total_nodes)
     print(network1.state)
     print(network1.weights)
 
@@ -419,8 +471,13 @@ if __name__ == '__main__':
     network1.run_live(row)
     print(network1.state)
 
-    new_connections = reproduction.combine(network1, network2)
-    print(new_connections)
+    new_network= reproduction.combine(network1, network2)
+
+    print(new_network.connections)
+    print(new_network.nodes)
+    print(new_network.order)
+
+
 # %%
 
 # fig = go.Figure(data=[go.Candlestick(x=df['open_date'],
@@ -459,14 +516,14 @@ if __name__ == '__main__':
 #     for counter_input in range(n_inputs_nodes):
 #         connection_weight = np.random.randn()
 #         From_node = counter_input 
-#         if  innovation_df['Abbrev'].str.contains(f'{From_node}-{To_node}').any():
+#         if  innovation_df_g['Abbrev'].str.contains(f'{From_node}-{To_node}').any():
 #             pass
 #         else:
-#             innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
-#                                                 'Innovation_number' : len(innovation_df)}, 
+#             innovation_df_g = innovation_df_g.append({'Abbrev' : f'{From_node}-{To_node}', 
+#                                                 'Innovation_number' : len(innovation_df_g)}, 
 #                                                     ignore_index=True)
 
-#         innovation_counter = innovation_df.loc[innovation_df['Abbrev'] == f'{From_node}-{To_node}',
+#         innovation_counter = innovation_df_g.loc[innovation_df_g['Abbrev'] == f'{From_node}-{To_node}',
 #                                                 'Innovation_number'].values[0]
 #         connections_df =connections_df.append({'From_node' : int(From_node), 
 #                                                 'To_node': int(To_node),  
@@ -480,13 +537,13 @@ if __name__ == '__main__':
 #     # Connect bias to output nodes
 #     connection_weight = np.random.randn() # Bias weight
 #     From_node = total_nodes
-#     if  innovation_df['Abbrev'].str.contains(f'{From_node}-{To_node}').any():
+#     if  innovation_df_g['Abbrev'].str.contains(f'{From_node}-{To_node}').any():
 #             pass
 #     else:
-#         innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
-#                                             'Innovation_number' : len(innovation_df)}, 
+#         innovation_df_g = innovation_df_g.append({'Abbrev' : f'{From_node}-{To_node}', 
+#                                             'Innovation_number' : len(innovation_df_g)}, 
 #                                                 ignore_index=True)
-#     innovation_counter = innovation_df.loc[innovation_df['Abbrev'] == f'{From_node}-{To_node}',
+#     innovation_counter = innovation_df_g.loc[innovation_df_g['Abbrev'] == f'{From_node}-{To_node}',
 #                                             'Innovation_number'].values[0]
 #     connections_df =connections_df.append({'From_node' : int(From_node), 
 #                                             'To_node': int(To_node),  
