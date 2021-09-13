@@ -66,7 +66,11 @@ class AI_network():
         order = self.order 
 
         # Select random connection
-        rand_connection = connections.loc[(connections['Enabled'] == True)].sample().index[0]                          
+        try:
+            rand_connection = connections.loc[(connections['Enabled'] == True)].sample().index[0]  
+        except ValueError as e: 
+            print(connections)        
+            raise(e)                
         connections.loc[rand_connection,'Enabled'] = False
 
         # create hidden node
@@ -365,20 +369,20 @@ class reproduction:
 
 #%% Neural network 
 if __name__ == '__main__':
-    symbol = 'BTCEUR'
-    markets = os.listdir('Data new/')
-    key = random.choice(markets)
-    df = pd.read_csv(f'Data new/{key}', index_col=0).fillna(0)
-    metrics = df.loc[:,'STD24':] #FIXME: Hard-coding this is scary
-    norm_metrics = ((metrics - metrics.mean()) / metrics.std())
-    df=df.loc[:, 'Timestamp':'symbol'].join(norm_metrics)
+    # symbol = 'BTCEUR'
+    # markets = os.listdir('Data new/')
+    # key = random.choice(markets)
+    # df = pd.read_csv(f'Data new/{key}', index_col=0).fillna(0)
+    # metrics = df.loc[:,'STD24':] #FIXME: Hard-coding this is scary
+    # norm_metrics = ((metrics - metrics.mean()) / metrics.std())
+    # df=df.loc[:, 'Timestamp':'symbol'].join(norm_metrics)
+
+    # df = df.loc[500:,:]
+    # batchSize = 100
+    # trainingsdata = df.iloc[:batchSize, 5:9]
     innovation_df_g = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
 
-    df = df.loc[500:,:]
-    batchSize = 100
-    trainingsdata = df.iloc[:batchSize, 5:9]
-
-    N_inputs = len(trainingsdata.columns)
+    N_inputs = 5
     N_output_nodes = 1
 
     innovation_counter = 0
@@ -387,30 +391,28 @@ if __name__ == '__main__':
     network2 = AI_network(verbose = True)
 
     N_total_nodes = N_inputs + N_output_nodes + 1
-    innovation_df_g, nodes_dict_g = network1.create_network(N_inputs, N_output_nodes, innovation_df_g) # DF to keep track of all innovation numbers
+    innovation_df_g = network1.create_network(N_inputs, N_output_nodes, innovation_df_g) # DF to keep track of all innovation numbers
     # print(innovation_df_g)
     # print(nodes_dict_g)
     # print(network1.nodes)
     # print(network1.connections)
     # print(network1.order)
 
-    innovation_df_g, nodes_dict_g = network2.create_network(N_inputs, N_output_nodes, innovation_df_g) # DF to keep track of all innovation numbers
+    innovation_df_g = network2.create_network(N_inputs, N_output_nodes, innovation_df_g) # DF to keep track of all innovation numbers
     # print(innovation_df_g)
     # print(nodes_dict_g)
     # print(network2.nodes)
     # print(network2.connections)
     # print(network2.order)
 
-    innovation_df_g, nodes_dict_g, N_total_nodes = network1.add_hidden_node(innovation_df_g, nodes_dict_g, N_total_nodes)
+    innovation_df_g, N_total_nodes = network1.add_hidden_node(innovation_df_g, N_total_nodes)
     print(innovation_df_g)
-    print(nodes_dict_g)
     print(network1.nodes)
     print(network1.connections)
     print(network1.order)
 
-    innovation_df_g, nodes_dict_g, N_total_nodes = network2.add_hidden_node(innovation_df_g, nodes_dict_g, N_total_nodes)
+    innovation_df_g, N_total_nodes = network2.add_hidden_node(innovation_df_g, N_total_nodes)
     print(innovation_df_g)
-    print(f'Global nodes dict:  {nodes_dict_g}')
 
     print(network2.connections)
     print(network2.order)
@@ -458,18 +460,18 @@ if __name__ == '__main__':
     print(network1.state)
     print(network1.weights)
 
-    df_result=network1.run(trainingsdata)
-    gen = trainingsdata.iterrows()
+    # df_result=network1.run(trainingsdata)
+    # gen = trainingsdata.iterrows()
 
-    print(network1.state)
-    _, row = next(gen)
-    print(row)
-    network1.run_live(row)
-    print(network1.state)
-    _, row = next(gen)
-    print(row)
-    network1.run_live(row)
-    print(network1.state)
+    # print(network1.state)
+    # _, row = next(gen)
+    # print(row)
+    # network1.run_live(row)
+    # print(network1.state)
+    # _, row = next(gen)
+    # print(row)
+    # network1.run_live(row)
+    # print(network1.state)
 
     new_network= reproduction.combine(network1, network2)
 

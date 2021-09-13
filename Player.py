@@ -36,9 +36,9 @@ class Player:
 
     def update(self, obstacles, level, checkpoints, counter):     
         if self.turn == "right":
-            self.rotate(math.pi/60)
+            self.rotate(math.pi/45)
         elif self.turn == "left":
-            self.rotate(-math.pi/60)
+            self.rotate(-math.pi/45)
         if self.speed_up:
             self.accelerate(ACCELERATION_DEFAULT)
         if self.speed_down:

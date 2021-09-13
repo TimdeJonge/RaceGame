@@ -23,11 +23,11 @@ def main():
         game.update()
         game.draw_screen(screen)
         pygame.display.flip()
-        clock.tick(FRAME_RATE)  
+        clock.tick(FRAME_RATE*2)  
     pygame.quit()
 
 
 if __name__ == "__main__":
     main()
     
-# %%
+    # %%

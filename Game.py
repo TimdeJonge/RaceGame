@@ -38,7 +38,6 @@ class Game(object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True
-
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     self.player.turn = "left"
@@ -57,6 +56,7 @@ class Game(object):
                     self.debug = not self.debug
                 elif event.key == pygame.K_f:
                     self.reproduce()
+                    self.counter = 0
                 elif event.key == pygame.K_p:
                     self.player_list[-1].human = True
                     self.player = self.player_list[-1]
@@ -81,15 +81,15 @@ class Game(object):
                 distances = self.player_list[i].observe(self.obstacle_list, self.level) 
                 network = self.network_list[i]   
                 network.run_live(distances)
-                if network.state[6] < -0.2: 
+                if network.state[6] < 0.4: 
                     self.player_list[i].speed_down = True 
                     self.player_list[i].speed_up = False
-                elif network.state[6] > 0:
+                elif network.state[6] > .5:
                     self.player_list[i].speed_down = False
                     self.player_list[i].speed_up = True
-                if network.state[7] > 0.1:
+                if network.state[7] > 0.6:
                     self.player_list[i].turn = 'right'
-                elif network.state[7] < -0.1:
+                elif network.state[7] < 0.4:
                     self.player_list[i].turn = 'left'
                 else: 
                     self.player_list[i].turn = 'neutral'
@@ -117,13 +117,13 @@ class Game(object):
             self.network_list[i].last_checkpoint = self.player_list[i].last_checkpoint
         self.network_list.sort(key = lambda x: (-x.fitness, x.last_checkpoint))
         del self.network_list[10:]
-        #print(self.network_list[0].weights)
         for i in range(len(self.network_list)):
             self.network_list[i].fitness = 0
-            for _ in range(4):
+            for _ in range(2):
                 fitwork = deepcopy(self.network_list[i])
                 self.innovation_df, self.total_nodes = fitwork.procreate(self.innovation_df, self.total_nodes)
                 self.network_list.append(fitwork)
+        print(len(self.network_list))
         self.player_list = [Player() for _ in range(30)]
         self.player = self.player_list[0]
         self.player_list[0].colour = RED
@@ -137,7 +137,7 @@ class Game(object):
         debug_string1 = "distances = " + str(self.player.observe(self.obstacle_list, self.level))
         debug_string2 = "aim = " + str(self.player.turn)
         debug_string3 = "Total speed = " + str(np.linalg.norm(self.player.speed))
-        debug_string4 = "Location = " + str(self.player.position)
+        debug_string4 = "activation = " + str(self.network_list[0].state[6:8])
         text1 = font.render(debug_string1, True, WHITE)
         text2 = font.render(debug_string2, True, WHITE)    
         text3 = font.render(debug_string3, True, WHITE)
@@ -157,7 +157,7 @@ class Game(object):
         for obstacle_row in self.obstacle_list:
             for obstacle in obstacle_row:
                 obstacle.draw(screen, self.camera)
-        for player in self.player_list:
+        for player in self.player_list[::-1]:
             player.draw_player(screen, self.camera)
         self.draw_time(screen, self.counter)
         if self.debug:
