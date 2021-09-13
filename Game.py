@@ -3,6 +3,7 @@ from Player import Player
 from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
 from Network import Network
+from neuralNet import AI_network
 from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
 from copy import deepcopy
 import pygame
@@ -18,7 +19,7 @@ class Game(object):
         self.generation = 0
         self.sounds = self.init_sounds()
         self.player_list = [Player() for _ in range(PLAYER_AMOUNT)]
-        self.network_list = [Network([6,4,4,3]) for _ in range(PLAYER_AMOUNT)]
+        self.network_list = [Network([6,4,4,3]) for _ in range(PLAYER_AMOUNT)] #TODO: Translate to AI_Network
         self.player = self.player_list[0]
         self.turn = "neutral"
         self.acceleration = False
@@ -69,8 +70,10 @@ class Game(object):
             self.reproduce()
             #self.food.radius = max(30, self.food.radius)
         for i in range(len(self.player_list)):
-            if not self.player_list[i].human:    
-                self.network_list[i].run_ai(self.player_list[i], self.obstacle_list, self.level)
+            if not self.player_list[i].human:
+                distances = self.player_list[i].observe(self.obstacle_list, self.level)    
+                result = self.network_list[i].run_ai(distances)
+                #TODO: Steering dependent on model output
             self.player_list[i].update(self.obstacle_list, self.level, self.checkpoints, self.counter)
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
         # Just subtract self.camera from everything that needs to be drawn on screen and it will work.

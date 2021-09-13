@@ -24,7 +24,7 @@ def main():
 
         pygame.display.flip()
 
-        clock.tick(FRAME_RATE)
+        clock.tick(FRAME_RATE)  
     pygame.quit()
 
 

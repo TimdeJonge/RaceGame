@@ -2,7 +2,7 @@ import pygame
 import math
 import numpy as np
 from Global import ACCELERATION_DEFAULT, BLACK, BLOCK_SIZE, RED
-from helpfunctions import intersect, split 
+from helpfunctions import intersect, split, line_intersection
 
 class Player:
     def __init__(self, position = None, speed= None,
@@ -18,7 +18,7 @@ class Player:
         self.colour = colour
         self.radius = radius
         self.turn = "neutral"
-        self.speed_up = False
+        self.speed_up = True
         self.speed_down = False
         self.speed_boost = False
         self.speed_boost_counter = -5000
@@ -45,6 +45,63 @@ class Player:
             self.accelerate(-ACCELERATION_DEFAULT)
         self.move(obstacles, level, checkpoints, counter)
 
+    def observe(self, obstacles, level):
+        view = np.array([math.cos(self.direction), math.sin(self.direction)])
+        view_left = np.array([math.cos(self.direction + math.pi/6), math.sin(self.direction + math.pi/6)])
+        view_right = np.array([math.cos(self.direction - math.pi/6), math.sin(self.direction - math.pi/6)])
+        view_sharpleft = np.array([math.cos(self.direction + math.pi/2), math.sin(self.direction + math.pi/2)])
+        view_sharpright = np.array([math.cos(self.direction - math.pi/2), math.sin(self.direction - math.pi/2)])
+        distances = np.array((self.ray(self, view, obstacles, level),
+                              self.ray(self, view_left, obstacles, level),
+                              self.ray(self, view_right, obstacles, level),
+                              self.ray(self, view_sharpleft, obstacles, level),
+                              self.ray(self, view_sharpright, obstacles, level),
+                              np.linalg.norm(self.speed))).reshape([6,1])
+        return distances
+
+    def ray(self, view, obstacles, level):
+        new_position = self.position + view*3*BLOCK_SIZE
+        intersection = self.position
+        x = int(self.position[0] / BLOCK_SIZE)
+        y = int(self.position[1] / BLOCK_SIZE)
+        for _ in range(4):
+            if level[y][x] == 1: 
+                #TODO: Move to function
+                obstacle = obstacles[y][x]
+                points = obstacle.vector_list
+                minimum = 2*BLOCK_SIZE
+                for i in range(len(points)): 
+                    if intersect([self.position, new_position], [points[i], points[(i+1)%len(points)]]):
+                        intersection = line_intersection([self.position, new_position], 
+                                                         [points[i], points[(i+1)%len(points)]])
+                        distance = np.linalg.norm((self.position-intersection))
+                        if distance < minimum:
+                            minimum = distance
+                if minimum < 2*BLOCK_SIZE:
+                    return minimum
+            #TODO: Fix repeated code
+            points = [(x*BLOCK_SIZE, y*BLOCK_SIZE),
+                      ((x+1)*BLOCK_SIZE, y*BLOCK_SIZE),
+                      ((x+1)*BLOCK_SIZE, (y+1)*BLOCK_SIZE),
+                      (x*BLOCK_SIZE, (y+1)*BLOCK_SIZE)]
+            maximum = 0
+            for i in range(len(points)): 
+                if intersect([self.position, new_position], [points[i], points[(i+1)%len(points)]]):
+                    intersection = line_intersection([self.position, new_position], 
+                                                     [points[i], points[(i+1)%len(points)]])
+                    distance =  np.linalg.norm((self.position-intersection))
+                    if distance > maximum:
+                        maximum = distance
+                        next_block = i
+            if next_block == 0:
+                y -= 1
+            elif next_block == 1:
+                x += 1
+            elif next_block == 2:
+                y += 1
+            else:
+                x -= 1
+        return 2*BLOCK_SIZE
 
     def move(self, obstacles, level, checkpoints, counter):
         new_position = self.position + self.speed + self.speed/np.linalg.norm(self.speed)*5
@@ -65,23 +122,19 @@ class Player:
             print(self.fitness)
             self.checkpoint = (self.checkpoint + 1) % len(checkpoints)
 
-    
-    
-    
-    
     def accelerate(self, pace):
         acceleration = np.array([math.cos(self.direction), math.sin(self.direction)])*pace
         self.speed += acceleration
-
 
     def rotate(self, angle):
         self.direction += angle
 
 
-    """Checks whether the player collides with the given obstacle.
-    If so, sets the player's parameters correctly for completing the bounce
-    Requires obstacle player can bounce again, position after 1 timestep. """ 
+ 
     def player_collision(self, obstacle, new_position):
+        '''Checks whether the player collides with the given obstacle.
+        If so, sets the player's parameters correctly for completing the bounce
+        Requires obstacle player can bounce again, position after 1 timestep. '''
         points = obstacle.vector_list
         for i in range(len(points)): 
             if intersect([self.position, new_position], [points[i], points[(i+1)%len(points)]]):
