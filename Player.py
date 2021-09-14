@@ -6,7 +6,7 @@ from helpfunctions import intersect, split, line_intersection
 
 class Player:
     def __init__(self, position = None, speed= None,
-                 radius=5, colour=BLACK):
+                 radius=5, colour=BLACK, network = None):
         if position is not None:
             self.position = position
         else:
@@ -16,6 +16,7 @@ class Player:
         else: 
             self.speed = np.array([1.0, 0.05])
         self.colour = colour
+        self.network = network
         self.radius = radius
         self.turn = "neutral"
         self.speed_up = False
@@ -24,7 +25,7 @@ class Player:
         self.speed_boost_counter = -5000
         self.acceleration = ACCELERATION_DEFAULT
         self.fitness = 0
-        self.checkpoint = 2
+        self.checkpoint = 1
         self.human = False
         self.last_checkpoint = 999999 
         if self.speed[0] == 0 and self.speed[1] >= 0:
@@ -128,8 +129,6 @@ class Player:
     def rotate(self, angle):
         self.direction += angle
 
-
- 
     def player_collision(self, obstacle, new_position):
         '''Checks whether the player collides with the given obstacle.
         If so, sets the player's parameters correctly for completing the bounce

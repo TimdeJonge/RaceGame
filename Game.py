@@ -2,11 +2,13 @@ import numpy as np
 from Player import Player
 from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
-from neuralNet import AI_network
+from neuralNet import AI_network, reproduction
 import pandas as pd
 from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
 from copy import deepcopy
 import pygame
+from time import localtime, strftime
+import random
 
 
 class Game(object):
@@ -18,15 +20,18 @@ class Game(object):
         self.counter = 0
         self.generation = 0
         self.sounds = self.init_sounds()
-        self.player_list = [Player() for _ in range(PLAYER_AMOUNT)]
-        self.network_list = [AI_network() for _ in range(PLAYER_AMOUNT)]
+        self.player_list = [Player(network=AI_network()) for _ in range(PLAYER_AMOUNT)]
+        self.player_active = 0
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
         self.total_nodes = 9
-        for network in self.network_list:
-            network.create_network(6,2,self.innovation_df)
-            for _ in range(10):
-                self.innovation_df, self.total_nodes = network.procreate(self.innovation_df, self.total_nodes)
-            network.build(self.total_nodes)
+        self.display = True
+        for player in self.player_list:
+            self.innovation_df = player.network.create_network(6,2,self.innovation_df)
+            self.innovation_df = player.network.append_connection(self.innovation_df, 1,6,np.random.randn())
+            self.innovation_df = player.network.append_connection(self.innovation_df, 1,7,np.random.randn())
+            self.innovation_df = player.network.append_connection(self.innovation_df, 2,6,np.random.randn())
+            self.innovation_df = player.network.append_connection(self.innovation_df, 2,7,np.random.randn())
+            player.network.build(self.total_nodes)
         self.player = self.player_list[0]
         self.turn = "neutral"
         self.acceleration = False
@@ -35,18 +40,29 @@ class Game(object):
 
     def process_events(self):
         """Handles all user inputs. Returns boolean "done" """
-        for event in pygame.event.get():
+        for event in pygame.event.get():   
             if event.type == pygame.QUIT:
                 return True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.player.turn = "left"
+                    if self.player.human:
+                        self.player.turn = "left"
+                    else:
+                        self.counter -= 30*FRAME_RATE
                 elif event.key == pygame.K_RIGHT:
                     self.player.turn = "right"
                 elif event.key == pygame.K_UP:
-                    self.player.speed_up = True
-                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.player.speed_down = True
+                    if self.player.human:
+                        self.player.speed_up = True
+                    else:
+                        self.player_active = (self.player_active + 1) % PLAYER_AMOUNT 
+                        self.player = self.player_list[self.player_active]
+                elif event.key == pygame.K_DOWN:
+                    if self.player.human:
+                        self.player.speed_down = True
+                    else:
+                        self.player_active = (self.player_active - 1) % PLAYER_AMOUNT 
+                        self.player = self.player_list[self.player_active]
                 elif event.key == pygame.K_r:
                     pass
                     #self.player.restart(np.array([300, 300]), np.array([1.0, 1.0]))
@@ -54,6 +70,10 @@ class Game(object):
                     self.player.speed_boost = True
                 elif event.key == pygame.K_d:
                     self.debug = not self.debug
+                elif event.key == pygame.K_q:
+                    self.display = not self.display
+                elif event.key == pygame.K_c:
+                    print(self.player.network.connections)                  
                 elif event.key == pygame.K_f:
                     self.reproduce()
                     self.counter = 0
@@ -61,7 +81,6 @@ class Game(object):
                     self.player_list[-1].human = True
                     self.player = self.player_list[-1]
                     self.player_list[-1].colour = WHITE
-
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     self.player.turn = "neutral"
@@ -75,35 +94,33 @@ class Game(object):
         self.counter += 1
         if not self.counter%(GENERATION_TIME*FRAME_RATE):
             self.reproduce()
-            #self.food.radius = max(30, self.food.radius)
-        for i in range(len(self.player_list)):
-            if not self.player_list[i].human:
-                distances = self.player_list[i].observe(self.obstacle_list, self.level) 
-                network = self.network_list[i]   
-                network.run_live(distances)
-                if network.state[6] < 0.4: 
-                    self.player_list[i].speed_down = True 
-                    self.player_list[i].speed_up = False
-                elif network.state[6] > .5:
-                    self.player_list[i].speed_down = False
-                    self.player_list[i].speed_up = True
-                if network.state[7] > 0.6:
-                    self.player_list[i].turn = 'right'
-                elif network.state[7] < 0.4:
-                    self.player_list[i].turn = 'left'
+        for player in self.player_list:
+            if not player.human:
+                distances = player.observe(self.obstacle_list, self.level) 
+                player.network.run_live(distances)
+                if player.network.state[6] < 0.4: 
+                    player.speed_down = True 
+                    player.speed_up = False
+                elif player.network.state[6] > .5:
+                    player.speed_down = False
+                    player.speed_up = True
+                if player.network.state[7] > 0.6:
+                    player.turn = 'right'
+                elif player.network.state[7] < 0.4:
+                    player.turn = 'left'
                 else: 
-                    self.player_list[i].turn = 'neutral'
-            self.player_list[i].update(self.obstacle_list, self.level, self.checkpoints, self.counter)
+                    player.turn = 'neutral'
+            player.update(self.obstacle_list, self.level, self.checkpoints, self.counter)
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
         # Just subtract self.camera from everything that needs to be drawn on screen and it will work.
         self.camera = (self.camera*(19) +
                        self.player.position -
                        np.array([SCREEN_WIDTH/2, SCREEN_HEIGHT/2]) +
                        self.player.speed*(40))*(.05)
-
     
     def reproduce(self):
         self.generation += 1
+        print(f'{strftime("%H:%M:%S", localtime())}: Starting Generation {self.generation}')
         if self.generation%2:
             self.level = turny
             self.obstacle_list = create_obstacles(self.level)
@@ -112,40 +129,41 @@ class Game(object):
             self.level = level
             self.obstacle_list = create_obstacles(self.level)
             self.checkpoints = level_checkpoints
-        for i in range(len(self.player_list)):
-            self.network_list[i].fitness = (self.player_list[i].fitness + self.network_list[i].fitness)/2
-            self.network_list[i].last_checkpoint = self.player_list[i].last_checkpoint
-        self.network_list.sort(key = lambda x: (-x.fitness, x.last_checkpoint))
-        del self.network_list[10:]
-        for i in range(len(self.network_list)):
-            self.network_list[i].fitness = 0
+        for player in self.player_list:
+            player.network.fitness, player.fitness = player.fitness, (player.fitness + player.network.fitness)/2
+        self.player_list.sort(key = lambda x: (-x.fitness, x.last_checkpoint))
+        print(f'Top player fitness: {self.player_list[0].fitness}') 
+        new_player_list = []
+        parents = self.player_list[:10]
+        for player in parents:
+            fitwork = deepcopy(player.network)
+            self.innovation_df, self.total_nodes = fitwork.mutate(self.innovation_df, self.total_nodes)
+            new_player_list.append(Player(network=fitwork))
             for _ in range(2):
-                fitwork = deepcopy(self.network_list[i])
-                self.innovation_df, self.total_nodes = fitwork.procreate(self.innovation_df, self.total_nodes)
-                self.network_list.append(fitwork)
-        print(len(self.network_list))
-        self.player_list = [Player() for _ in range(30)]
-        self.player = self.player_list[0]
+                other_player = random.choice(parents)
+                child = reproduction.combine(player.network, other_player.network)
+                self.innovation_df, self.total_nodes = child.mutate(self.innovation_df, self.total_nodes)
+                new_player_list.append(Player(network=child))
+        self.player_list = new_player_list
+        self.player_active = 0
+        self.player = self.player_list[self.player_active]
         self.player_list[0].colour = RED
         self.player_list[1].colour = GREEN
 
     def draw_debug(self, screen):
         """Draws debug strings. Contents can be varied in the initial string.
         :param screen      the screen on which to draw debug""" 
+        debug_strings = [f"Following: Player {self.player_active}"]
         font = pygame.font.SysFont('Console', 20, False, False)
-        pygame.draw.circle(screen, BLACK, [600, 400], 0)
-        debug_string1 = "distances = " + str(self.player.observe(self.obstacle_list, self.level))
-        debug_string2 = "aim = " + str(self.player.turn)
-        debug_string3 = "Total speed = " + str(np.linalg.norm(self.player.speed))
-        debug_string4 = "activation = " + str(self.network_list[0].state[6:8])
-        text1 = font.render(debug_string1, True, WHITE)
-        text2 = font.render(debug_string2, True, WHITE)    
-        text3 = font.render(debug_string3, True, WHITE)
-        text4 = font.render(debug_string4, True, WHITE)
-        screen.blit(text1, [0, 0])
-        screen.blit(text2, [0, 15])
-        screen.blit(text3, [0, 30])
-        screen.blit(text4, [0, 45])
+        if self.player.human:
+            debug_strings[0] = "Following: You!"
+        else:
+            debug_strings[0] = f"Following: Player {self.player_active}"
+        debug_strings.append(f"Fitness = {self.player.fitness}")
+        debug_strings.append(f'Last Fitness = {self.player.network.fitness}')
+        debug_strings.append(f'Gas Pedal / Steering Wheel: {self.player.network.state[6:8]}')
+        for i in range(len(debug_strings)):
+            screen.blit(font.render(debug_strings[i], True, WHITE), [0, 0+20*i])
         for checkpoint in self.checkpoints:
             pygame.draw.line(screen, BLACK, np.array(checkpoint[0])- self.camera,
                          np.array(checkpoint[1])- self.camera)
@@ -160,9 +178,12 @@ class Game(object):
         for player in self.player_list[::-1]:
             player.draw_player(screen, self.camera)
         self.draw_time(screen, self.counter)
+        font = pygame.font.SysFont('Console', 20, False, False)
+        screen.blit(font.render(f"Generation {self.generation}", True, WHITE), (0, SCREEN_HEIGHT-20))
         if self.debug:
             self.draw_debug(screen)
 
+    
     @staticmethod
     def draw_time(screen, counter):
         """Draws time in the lower right corner
