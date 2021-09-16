@@ -48,7 +48,7 @@ class AI_network():
             if self.verbose:
                 print(f'Hidden node added: {N_total_nodes}')
             # Connection to hidden
-            self.append_connection(
+            innovation_df_g=self.append_connection(
                 innovation_df_g, 
                 From_node = self.connections.loc[random_node_idx, 'From_node'].item(),
                 To_node = N_total_nodes,
@@ -56,7 +56,7 @@ class AI_network():
             )
 
             # Connection hidden to
-            self.append_connection(
+            innovation_df_g=self.append_connection(
                 innovation_df_g,
                 From_node = N_total_nodes,
                 To_node = self.connections.loc[random_node_idx, 'To_node'].item(),
@@ -199,7 +199,36 @@ class AI_network():
         return innovation_df_g, total_nodes
 
 #%% 
-class reproduction:
+class Population:
+    def __init__(self, pop_size = 30):
+        self.list = [AI_network() for _ in range(pop_size)]
+        self.generation = 0 
+
+    def distance(network1, network2, weight_excess, weight_disjoint, weight_difference):
+        size = max(len(network1.connections), len(network2.connections))
+        excess_threshold = min(
+                            network1.connections['Innovation_number'].max(),
+                            network2.connections['Innovation_number'].max()
+                            )
+
+        total_connections = network1.connections.merge(
+                                network2.connections, 
+                                on='Innovation_number', 
+                                how='outer', 
+                                suffixes=[1,2])
+        
+        total_connections['Weight_diff'] = abs(total_connections['Weight1'] - total_connections['Weight2'])
+        total_connections['Excess'] = total_connections['Innovation_number'] > excess_threshold
+        total_connections['Disjoint'] = total_connections['Weight_diff'].isnull() & ~total_connections['Excess']
+        distance = (
+                    weight_difference * total_connections['Weight_diff'].mean() + 
+                    weight_excess * total_connections['Excess'].sum() / size + 
+                    weight_disjoint * total_connections['Disjoint'].sum() / size 
+                    )   
+        return distance
+
+
+
     def combine(network1, network2, verbose = False):
         connections1 = network1.connections
         connections2 = network2.connections
@@ -278,9 +307,8 @@ if __name__ == '__main__':
     innovation_df_g, N_total_nodes = network1.add_hidden_node(innovation_df_g, N_total_nodes)
     innovation_df_g, N_total_nodes = network2.add_hidden_node(innovation_df_g, N_total_nodes)
     innovation_df_g = network2.add_connection(innovation_df_g)
-    innovation_df_g,N_total_nodes = network1.add_hidden_node(innovation_df_g, N_total_nodes)
     innovation_df_g = network1.add_connection(innovation_df_g)
-    new_network = reproduction.combine(network1, network2)
+    new_network = Population.combine(network1, network2)
     network1.mutate_weight_small(amount = 10)
     network1.mutate_weight_big()
     network1.disable_connection(amount = 1)
@@ -302,7 +330,7 @@ if __name__ == '__main__':
     # network1.run_live(row)
     # print(network1.state)
 
-    new_network= reproduction.combine(network1, network2)
+    new_network= Population.combine(network1, network2)
 
 
 # %%
