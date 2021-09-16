@@ -1,4 +1,6 @@
 #%%
+from collections import defaultdict
+from typing_extensions import ParamSpecArgs
 import numpy as np
 import pandas as pd
 import random
@@ -22,6 +24,7 @@ class AI_network():
         self.fitness = 0
         self.results = []
         self.order = []
+        self.species = None
     
     def create_network(self, n_input_nodes, n_output_nodes, innovation_df_g):
         total_nodes = n_input_nodes + n_output_nodes
@@ -202,10 +205,60 @@ class AI_network():
 class Population:
     def __init__(self, pop_size = 30):
         self.list = [AI_network() for _ in range(pop_size)]
+        self.pop_size = pop_size
         self.generation = 0 
+        self.champions = []
+        self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
+        self.species_count = 0
+        self.total_nodes = None
 
-    def distance(network1, network2, weight_excess, weight_disjoint, weight_difference):
+    def create_population(self, n_input_nodes, n_output_nodes):
+        self.total_nodes = n_input_nodes + n_output_nodes + 1
+        for network in self.list:
+            self.innovation_df = network.create_network(n_input_nodes, n_output_nodes, self.innovation_df)
+            network.build(self.total_nodes)
+        self.speciate()
+
+    def speciate(self, distance_threshold=3):
+        for network in self.list:
+            for champion in self.champions:
+                if self.distance(network, champion) < distance_threshold:
+                    network.species = champion.species
+                    break
+            else:
+                network.species = self.species_count
+                self.species_count += 1
+                self.champions.append(network)
+
+    def advance_generation(self):
+        fitness = {}
+        species_dict = defaultdict(list)
+        for champion in self.champions:
+            for network in self.list:
+                if network.species == champion.species:
+                    species_dict[champion.species].append(network)
+
+            fitness[champion.species] = np.mean([network.fitness for network in species_dict[champion.species]])
+            species_dict[champion.species].sort(key = lambda x: (-x.fitness))
+
+        self.champions = [species[0] for species in species_dict.values()]
+        next_gen = [species[0] for species in species_dict.values()]
+
+        for species in fitness:
+            species_dict[species] = species_dict[species][:4] #TODO: Make this more flexible
+            new_size = fitness[species] / sum(fitness.values()) * self.pop_size
+            for _ in range(int(new_size)-1):
+                child = self.combine(*random.choices(species_dict[species], k=2))
+                next_gen.append(child)
+        self.list = next_gen       
+        self.speciate()
+        self.generation += 1
+
+    @staticmethod
+    def distance(network1, network2, coeff_excess=1, coeff_disjoint=1, coeff_weight=0.4):
         size = max(len(network1.connections), len(network2.connections))
+        if size < 20:
+            size = 1
         excess_threshold = min(
                             network1.connections['Innovation_number'].max(),
                             network2.connections['Innovation_number'].max()
@@ -220,15 +273,18 @@ class Population:
         total_connections['Weight_diff'] = abs(total_connections['Weight1'] - total_connections['Weight2'])
         total_connections['Excess'] = total_connections['Innovation_number'] > excess_threshold
         total_connections['Disjoint'] = total_connections['Weight_diff'].isnull() & ~total_connections['Excess']
+        if np.isnan(total_connections['Weight_diff'].mean()):
+            weight_diff = 1
+        else: 
+            weight_diff = total_connections['Weight_diff'].mean()
         distance = (
-                    weight_difference * total_connections['Weight_diff'].mean() + 
-                    weight_excess * total_connections['Excess'].sum() / size + 
-                    weight_disjoint * total_connections['Disjoint'].sum() / size 
+                    coeff_weight * weight_diff + 
+                    coeff_excess * total_connections['Excess'].sum() / size + 
+                    coeff_disjoint * total_connections['Disjoint'].sum() / size 
                     )   
         return distance
 
-
-
+    @staticmethod
     def combine(network1, network2, verbose = False):
         connections1 = network1.connections
         connections2 = network2.connections
@@ -279,10 +335,17 @@ class Population:
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
 
-    def speciate(population):
-        # Some code to differentiate between networks
-        # Some code to assign a species number to members
-        return population
+population = Population()
+population.create_population(5,1)
+for network in population.list:
+    for _ in range(10):
+        population.innovation_df, population.total_nodes = network.mutate(population.innovation_df, population.total_nodes)
+    network.run_live([1,1,1,1,1])
+    network.fitness = network.state[5]
+population.advance_generation()
+print(population.champions[0].connections)
+print(population.champions[1].connections)
+print(population.distance(population.champions[0], population.champions[1]))
 
 #%% Neural network 
 if __name__ == '__main__':
