@@ -1,6 +1,5 @@
 #%%
 from collections import defaultdict
-from typing_extensions import ParamSpecArgs
 import numpy as np
 import pandas as pd
 import random
@@ -202,7 +201,7 @@ class AI_network():
         return innovation_df_g, total_nodes
 
 #%% 
-class Population:
+class Population():
     def __init__(self, pop_size = 30):
         self.list = [AI_network() for _ in range(pop_size)]
         self.pop_size = pop_size
@@ -211,6 +210,12 @@ class Population:
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
         self.species_count = 0
         self.total_nodes = None
+    
+    def __iter__(self):
+        return (network for network in self.list)
+    
+    def __len__(self):
+        return len(self.list)
 
     def create_population(self, n_input_nodes, n_output_nodes):
         self.total_nodes = n_input_nodes + n_output_nodes + 1
@@ -237,7 +242,6 @@ class Population:
             for network in self.list:
                 if network.species == champion.species:
                     species_dict[champion.species].append(network)
-
             fitness[champion.species] = np.mean([network.fitness for network in species_dict[champion.species]])
             species_dict[champion.species].sort(key = lambda x: (-x.fitness))
 
@@ -246,9 +250,15 @@ class Population:
 
         for species in fitness:
             species_dict[species] = species_dict[species][:4] #TODO: Make this more flexible
+            if sum(fitness.values()) == 0:
+                self.__init__()
+                self.create_population(6,2) #TODO: Make this non-static
+                return False
             new_size = fitness[species] / sum(fitness.values()) * self.pop_size
             for _ in range(int(new_size)-1):
                 child = self.combine(*random.choices(species_dict[species], k=2))
+                self.innovation_df, self.total_nodes = child.mutate(self.innovation_df, self.total_nodes)
+                child.build(self.total_nodes)                
                 next_gen.append(child)
         self.list = next_gen       
         self.speciate()
@@ -288,7 +298,7 @@ class Population:
     def combine(network1, network2, verbose = False):
         connections1 = network1.connections
         connections2 = network2.connections
-
+       
         # Connections that both networks have in common
         double_connections = connections1.loc[connections1['Innovation_number'].isin(connections2['Innovation_number'])]
         double_connections.loc[:,'rand_num'] = np.random.randint(1,3, double_connections.shape[0])
@@ -335,17 +345,22 @@ class Population:
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
 
-population = Population()
-population.create_population(5,1)
-for network in population.list:
-    for _ in range(10):
-        population.innovation_df, population.total_nodes = network.mutate(population.innovation_df, population.total_nodes)
-    network.run_live([1,1,1,1,1])
-    network.fitness = network.state[5]
-population.advance_generation()
-print(population.champions[0].connections)
-print(population.champions[1].connections)
-print(population.distance(population.champions[0], population.champions[1]))
+if __name__ == '__main__':
+    population = Population()
+    population.create_population(5,1)
+
+    for network in population:
+        for _ in range(10):
+            population.innovation_df, population.total_nodes = network.mutate(population.innovation_df, population.total_nodes)
+        network.run_live([1,1,1,1,1])
+        network.fitness = network.state[5]
+    for network in population:
+        print(network.fitness)
+    population.advance_generation()
+    print(len(population.champions))
+    print(population.champions[0].connections)
+    print(population.champions[1].connections)
+    print(population.distance(population.champions[0], population.champions[1]))
 
 #%% Neural network 
 if __name__ == '__main__':

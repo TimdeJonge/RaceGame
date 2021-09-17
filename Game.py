@@ -1,15 +1,13 @@
+from collections import defaultdict
 import numpy as np
 from Player import Player
 from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
-from neuralNet import AI_network, reproduction
+from neuralNet import AI_network, Population
 import pandas as pd
 from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
-from copy import deepcopy
 import pygame
 from time import localtime, strftime
-import random
-
 
 class Game(object):
     def __init__(self):
@@ -20,18 +18,13 @@ class Game(object):
         self.counter = 0
         self.generation = 0
         self.sounds = self.init_sounds()
-        self.player_list = [Player(network=AI_network()) for _ in range(PLAYER_AMOUNT)]
+        self.population = Population(PLAYER_AMOUNT)
+        self.population.create_population(6,2)
+        self.player_list = [Player(network=network) for network in self.population]
         self.player_active = 0
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
         self.total_nodes = 9
         self.display = True
-        for player in self.player_list:
-            self.innovation_df = player.network.create_network(6,2,self.innovation_df)
-            self.innovation_df = player.network.append_connection(self.innovation_df, 1,6,np.random.randn())
-            self.innovation_df = player.network.append_connection(self.innovation_df, 1,7,np.random.randn())
-            self.innovation_df = player.network.append_connection(self.innovation_df, 2,6,np.random.randn())
-            self.innovation_df = player.network.append_connection(self.innovation_df, 2,7,np.random.randn())
-            player.network.build(self.total_nodes)
         self.player = self.player_list[0]
         self.turn = "neutral"
         self.acceleration = False
@@ -55,13 +48,13 @@ class Game(object):
                     if self.player.human:
                         self.player.speed_up = True
                     else:
-                        self.player_active = (self.player_active + 1) % PLAYER_AMOUNT 
+                        self.player_active = (self.player_active + 1) % len(self.population) 
                         self.player = self.player_list[self.player_active]
                 elif event.key == pygame.K_DOWN:
                     if self.player.human:
                         self.player.speed_down = True
                     else:
-                        self.player_active = (self.player_active - 1) % PLAYER_AMOUNT 
+                        self.player_active = (self.player_active - 1) %  len(self.population)  
                         self.player = self.player_list[self.player_active]
                 elif event.key == pygame.K_r:
                     pass
@@ -131,24 +124,14 @@ class Game(object):
             self.checkpoints = level_checkpoints
         for player in self.player_list:
             player.network.fitness, player.fitness = player.fitness, (player.fitness + player.network.fitness)/2
-        self.player_list.sort(key = lambda x: (-x.fitness, x.last_checkpoint))
-        print(f'Top player fitness: {self.player_list[0].fitness}') 
-        new_player_list = []
-        parents = self.player_list[:10]
-        for player in parents:
-            fitwork = deepcopy(player.network)
-            self.innovation_df, self.total_nodes = fitwork.mutate(self.innovation_df, self.total_nodes)
-            new_player_list.append(Player(network=fitwork))
-            for _ in range(2):
-                other_player = random.choice(parents)
-                child = reproduction.combine(player.network, other_player.network)
-                self.innovation_df, self.total_nodes = child.mutate(self.innovation_df, self.total_nodes)
-                new_player_list.append(Player(network=child))
-        self.player_list = new_player_list
+        self.population.advance_generation()
+        self.player_list = [Player(network=network) for network in self.population]
         self.player_active = 0
         self.player = self.player_list[self.player_active]
-        self.player_list[0].colour = RED
-        self.player_list[1].colour = GREEN
+        for player in self.player_list:
+            player.colour = colourpicker[player.network.species]
+        # self.player_list[0].colour = RED
+        # self.player_list[1].colour = GREEN
 
     def draw_debug(self, screen):
         """Draws debug strings. Contents can be varied in the initial string.
@@ -161,6 +144,7 @@ class Game(object):
             debug_strings[0] = f"Following: Player {self.player_active}"
         debug_strings.append(f"Fitness = {self.player.fitness}")
         debug_strings.append(f'Last Fitness = {self.player.network.fitness}')
+        debug_strings.append(f'Species = {self.player.network.species}')
         debug_strings.append(f'Gas Pedal / Steering Wheel: {self.player.network.state[6:8]}')
         for i in range(len(debug_strings)):
             screen.blit(font.render(debug_strings[i], True, WHITE), [0, 0+20*i])
@@ -204,3 +188,6 @@ class Game(object):
     def init_sounds():
         HIT_SOUND = pygame.mixer.Sound("hit.ogg")
         return HIT_SOUND
+
+
+colourpicker = defaultdict(lambda : (np.random.randint(0,255, size=3)))
