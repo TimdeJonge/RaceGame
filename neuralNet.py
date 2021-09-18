@@ -333,9 +333,17 @@ class Population():
                 print('No value to add')
         new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
         # Set new nodes
-        new_nodes = network1.nodes
-        new_nodes.update(network2.nodes)
+        new_nodes = network1.nodes.copy()
+        new_nodes.update(network2.nodes)        
 
+        new_nodes = {
+                k : v 
+                for k,v in new_nodes.items() 
+                if (
+                    (k in new_connections['To_node'].values) or 
+                    (k in new_connections['From_node'].values) or 
+                    (v != 'Hidden')
+                )}
         new_order = list(np.unique(np.concatenate((network1.order, network2.order))))
 
         new_network = AI_network(verbose = verbose)
@@ -344,7 +352,7 @@ class Population():
         new_network.order = new_order
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
-
+#%%
 if __name__ == '__main__':
     population = Population()
     population.create_population(5,1)
