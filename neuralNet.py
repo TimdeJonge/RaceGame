@@ -234,7 +234,7 @@ class Population():
                 self.species_count += 1
                 self.champions.append(network)
 
-    def advance_generation(self):
+    def advance_generation(self, reduce_species=False):
         fitness = {}
         species_dict = defaultdict(list)
         new_champions = []
@@ -249,7 +249,13 @@ class Population():
 
         self.champions = new_champions
         next_gen = []
-
+        if reduce_species:
+            print('Reducing species!')
+            for species in fitness:
+                print(species, fitness[species])
+            fitness = {k : v for k, v in fitness.items() if k in sorted(fitness, key=fitness.get, reverse=True)[:3]}
+            for species in fitness:
+                print(species, fitness[species])
         for species in fitness:
             species_dict[species] = species_dict[species][:4] #TODO: Make this more flexible
             if sum(fitness.values()) == 0:

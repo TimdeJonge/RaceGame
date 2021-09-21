@@ -26,7 +26,6 @@ class Player:
         self.fitness = 0
         self.checkpoint = 1
         self.human = False
-        self.last_checkpoint = 999999 
         if self.speed[0] == 0 and self.speed[1] >= 0:
             self.direction = math.pi / 2
         elif self.speed[0] == 0 and self.speed[1] < 0:
@@ -34,7 +33,7 @@ class Player:
         else:
             self.direction = math.atan(self.speed[1] / self.speed[0])
 
-    def update(self, obstacles, level, checkpoints, counter):     
+    def update(self, obstacles, level, checkpoints):     
         if self.turn == "right":
             self.rotate(math.pi/45)
         elif self.turn == "left":
@@ -44,13 +43,10 @@ class Player:
         if self.speed_down:
             self.accelerate(-ACCELERATION_DEFAULT)
         self.set_speed(obstacles, level)
-        if self.check_point(checkpoints):
-            time_checkpoint_hit = counter
-        else:
-            time_checkpoint_hit = None
+        checkpoint_hit = self.check_point(checkpoints)
         self.position += self.speed
         self.fitness += np.linalg.norm(self.speed)
-        return time_checkpoint_hit
+        return checkpoint_hit
 
     def observe(self, obstacles, level):
         view = np.array([math.cos(self.direction), math.sin(self.direction)])

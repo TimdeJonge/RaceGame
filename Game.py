@@ -18,18 +18,17 @@ class Game(object):
         self.checkpoints = turny_checkpoints
         self.counter = 0
         self.generation = 0
-        self.sounds = self.init_sounds()
         self.population = Population(PLAYER_AMOUNT)
         self.population.create_population(6,2)
         self.player_list = [Player(network=network) for network in self.population]
         self.player_active = 0
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
         self.total_nodes = 9
+        self.last_checkpoint = 0
+        self.max_fitness = 0 
+        self.anger = 0
         self.display = True
         self.player = self.player_list[0]
-        self.turn = "neutral"
-        self.acceleration = False
-        self.brake = False
         self.camera = self.player.position - np.array([SCREEN_WIDTH/2, SCREEN_HEIGHT/2])
 
     def process_events(self):
@@ -68,9 +67,14 @@ class Game(object):
                 elif event.key == pygame.K_c:
                     print(self.player.network.connections.loc[self.player.network.connections['Enabled']])     
                 elif event.key == pygame.K_n:
-                    print(self.player.network.nodes)             
+                    print(self.player.network.nodes)   
+                elif event.key == pygame.K_o:
+                    print(self.player.network.order)   
                 elif event.key == pygame.K_f:
                     self.reproduce()
+                    self.counter = 0
+                elif event.key == pygame.K_t:
+                    self.reproduce(keep_species=False)
                     self.counter = 0
                 elif event.key == pygame.K_KP_PLUS:
                     self.counter -= 30*FRAME_RATE
@@ -90,7 +94,8 @@ class Game(object):
 
     def update(self):
         self.counter += 1
-        if not self.counter%(GENERATION_TIME*FRAME_RATE):
+        if not self.counter%(GENERATION_TIME*FRAME_RATE) or (self.counter - self.last_checkpoint > FRAME_RATE*15):
+            self.counter = 0
             self.reproduce()
         for player in self.player_list:
             if not player.human:
@@ -108,7 +113,9 @@ class Game(object):
                     player.turn = 'left'
                 else: 
                     player.turn = 'neutral'
-            player.update(self.obstacle_list, self.level, self.checkpoints, self.counter)
+            checkpoint_hit = player.update(self.obstacle_list, self.level, self.checkpoints)
+            if checkpoint_hit:
+                self.last_checkpoint = self.counter
         # The camera is a bit of magic in how it works. Don't mess with it too much and all will be fine.
         # Just subtract self.camera from everything that needs to be drawn on screen and it will work.
         self.camera = (self.camera*(19) +
@@ -116,7 +123,7 @@ class Game(object):
                        np.array([SCREEN_WIDTH/2, SCREEN_HEIGHT/2]) +
                        self.player.speed*(40))*(.05)
     
-    def reproduce(self):
+    def reproduce(self, keep_species=True):
         self.generation += 1
         print(f'{strftime("%H:%M:%S", localtime())}: Starting Generation {self.generation}')
         if self.generation%2:
@@ -129,7 +136,17 @@ class Game(object):
             self.checkpoints = level_checkpoints
         for player in self.player_list:
             player.network.fitness, player.fitness = player.fitness, (player.fitness + player.network.fitness)/2
-        self.population.advance_generation()
+        fitwork = max(self.population, key=lambda x: x.fitness)
+        print(fitwork.connections)
+        if fitwork.fitness > self.max_fitness:
+            self.max_fitness = fitwork.fitness
+            self.anger = 0
+        else:
+            self.anger += 1
+        if self.anger < 10 and keep_species:
+            self.population.advance_generation()
+        else:
+            self.population.advance_generation(reduce_species=True)
         self.player_list = [Player(network=network) for network in self.population]
         self.player_active = 0
         self.player = self.player_list[self.player_active]
@@ -188,11 +205,6 @@ class Game(object):
         output_string = "Time: {0:02}:{1:02}".format(minutes, seconds)
         text = font.render(output_string, True, WHITE)
         screen.blit(text, [SCREEN_WIDTH - 150, SCREEN_HEIGHT - 20])
-
-    @staticmethod
-    def init_sounds():
-        HIT_SOUND = pygame.mixer.Sound("hit.ogg")
-        return HIT_SOUND
 
 
 colourpicker = defaultdict(lambda : (np.random.randint(0,255, size=3)))
