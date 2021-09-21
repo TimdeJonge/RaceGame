@@ -4,7 +4,7 @@ from pygame.constants import K_KP_PLUS
 from Player import Player
 from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
-from neuralNet import AI_network, Population
+from neuralNet import Population
 import pandas as pd
 from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
 import pygame

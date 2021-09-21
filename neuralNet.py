@@ -260,7 +260,7 @@ class Population():
                 self.create_population(6,2) #TODO: Make this non-static
                 return False
             new_size = fitness[species] / sum(fitness.values()) * self.pop_size
-            if new_size > 5:
+            if new_size > 3:
                 next_gen.append(species_dict[species][0])
             for _ in range(int(new_size)):
                 child = self.combine(*random.choices(species_dict[species], k=2))

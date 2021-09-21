@@ -5,8 +5,7 @@ from Global import ACCELERATION_DEFAULT, BLACK, BLOCK_SIZE, RED
 from helpfunctions import intersect, split, line_intersection
 
 class Player:
-    def __init__(self, position = None, speed= None,
-                 radius=5, colour=BLACK, network = None):
+    def __init__(self, network=None, colour=BLACK, position = None, speed=None):
         if position is not None:
             self.position = position
         else:
@@ -17,7 +16,7 @@ class Player:
             self.speed = np.array([1.0, 0.05])
         self.colour = colour
         self.network = network
-        self.radius = radius
+        self.radius = 5
         self.turn = "neutral"
         self.speed_up = False
         self.speed_down = False
@@ -44,8 +43,14 @@ class Player:
             self.accelerate(ACCELERATION_DEFAULT)
         if self.speed_down:
             self.accelerate(-ACCELERATION_DEFAULT)
-        self.move(obstacles, level, checkpoints, counter)
+        self.set_speed(obstacles, level)
+        if self.check_point(checkpoints):
+            time_checkpoint_hit = counter
+        else:
+            time_checkpoint_hit = None
+        self.position += self.speed
         self.fitness += np.linalg.norm(self.speed)
+        return time_checkpoint_hit
 
     def observe(self, obstacles, level):
         view = np.array([math.cos(self.direction), math.sin(self.direction)])
@@ -105,23 +110,22 @@ class Player:
                 x -= 1
         return 0
 
-    def move(self, obstacles, level, checkpoints, counter):
-        new_position = self.position + self.speed + self.speed/np.linalg.norm(self.speed)*5
+    def set_speed(self, obstacles, level):
+        new_position = self.position + self.speed + self.speed/np.linalg.norm(self.speed)*5 #Somehow, this makes collision detection work. Don't remove it.
         x = int(new_position[0]//BLOCK_SIZE)
         y = int(new_position[1]//BLOCK_SIZE)
         if level[y][x]: 
             self.player_collision(obstacles[y][x], new_position)
-        self.check_point(checkpoints, counter)
-        self.position = self.position + self.speed
         self.friction()
-        #self.check_food(food)
             
-    def check_point(self, checkpoints, counter):
+    def check_point(self, checkpoints):
         new_position = self.position + self.speed
         if intersect([self.position, new_position], checkpoints[self.checkpoint]):
             self.fitness += 10000
-            self.last_checkpoint = counter
             self.checkpoint = (self.checkpoint + 1) % len(checkpoints)
+            return True
+        else:
+            return False
 
     def accelerate(self, pace):
         acceleration = np.array([math.cos(self.direction), math.sin(self.direction)])*pace
@@ -138,20 +142,16 @@ class Player:
         for i in range(len(points)): 
             if intersect([self.position, new_position], [points[i], points[(i+1)%len(points)]]):
                 parallel, perpendicular = split(points[i] - points[(i+1)%len(points)], self.speed)
-                new_speed = (parallel - perpendicular)*.3
-                self.set_speed(new_speed[0], new_speed[1])
+                self.speed = (parallel - perpendicular)*.3
                 if np.linalg.norm(self.speed) > 1:
-                    self.fitness -= 100 
+                    self.fitness -= 1000 
+                break
 
     def friction(self):
         if np.linalg.norm(self.speed) < 5:
             self.speed -= self.speed*0.05
         else:
-            self.speed -= self.speed*.0125*np.linalg.norm(self.speed)       
-        
-    def set_speed(self, x_speed, y_speed):
-        self.speed[0] = x_speed
-        self.speed[1] = y_speed
+            self.speed -= self.speed*.0125*np.linalg.norm(self.speed)
 
 
     def restart(self, position, speed):
