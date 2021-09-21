@@ -140,7 +140,7 @@ class Player:
                 parallel, perpendicular = split(points[i] - points[(i+1)%len(points)], self.speed)
                 self.speed = (parallel - perpendicular)*.3
                 if np.linalg.norm(self.speed) > 1:
-                    self.fitness -= 1000 
+                    self.fitness -= 100
                 break
 
     def friction(self):

@@ -78,7 +78,7 @@ class Game(object):
                     self.counter = 0
                 elif event.key == pygame.K_KP_PLUS:
                     self.counter -= 30*FRAME_RATE
-                    
+                    self.last_checkpoint = self.counter
                 elif event.key == pygame.K_p:
                     self.player_list[-1].human = True
                     self.player = self.player_list[-1]
@@ -141,7 +141,7 @@ class Game(object):
         for player in self.player_list:
             player.network.fitness, player.fitness = player.fitness, (player.fitness + player.network.fitness)/2
         fitwork = max(self.population, key=lambda x: x.fitness)
-        print(fitwork.connections)
+        print(fitwork.fitness, fitwork.connections)
         if fitwork.fitness > self.max_fitness:
             self.max_fitness = fitwork.fitness
             self.anger = 0

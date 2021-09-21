@@ -251,9 +251,11 @@ class Population():
         next_gen = []
         if reduce_species:
             print('Reducing species!')
+            print('Old species:')
             for species in fitness:
                 print(species, fitness[species])
             fitness = {k : v for k, v in fitness.items() if k in sorted(fitness, key=fitness.get, reverse=True)[:3]}
+            print('New species:')
             for species in fitness:
                 print(species, fitness[species])
         for species in fitness:
