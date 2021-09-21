@@ -188,13 +188,13 @@ class AI_network():
                     self.mutate_weight_small()
                 if random.random() < 0.1:
                     self.mutate_weight_big()
-        if random.random() < 0.05:
+        if random.random() < 0.1:
             innovation_df_g=self.add_connection(innovation_df_g)
         if random.random() < 0.01:
             innovation_df_g, total_nodes=self.add_hidden_node(innovation_df_g, total_nodes)
-        if random.random() < 0.06:
+        if random.random() < 0.1:
             self.disable_connection()
-        if random.random() < 0.03:
+        if random.random() < 0.05:
             self.enable_connection()
 
         self.build(total_nodes)
@@ -221,6 +221,8 @@ class Population():
         self.total_nodes = n_input_nodes + n_output_nodes + 1
         for network in self.list:
             self.innovation_df = network.create_network(n_input_nodes, n_output_nodes, self.innovation_df)
+            self.innovation_df = network.add_connection(self.innovation_df)
+            self.innovation_df = network.add_connection(self.innovation_df)
             network.build(self.total_nodes)
         self.speciate()
 
@@ -238,15 +240,18 @@ class Population():
     def advance_generation(self):
         fitness = {}
         species_dict = defaultdict(list)
+        new_champions = []
         for champion in self.champions:
             for network in self.list:
                 if network.species == champion.species:
                     species_dict[champion.species].append(network)
-            fitness[champion.species] = np.mean([network.fitness for network in species_dict[champion.species]])
-            species_dict[champion.species].sort(key = lambda x: (-x.fitness))
+            if len(species_dict[champion.species]) > 0:
+                fitness[champion.species] = np.mean([network.fitness for network in species_dict[champion.species]])
+                species_dict[champion.species].sort(key = lambda x: (-x.fitness))
+                new_champions.append(champion)
 
-        self.champions = [species[0] for species in species_dict.values()]
-        next_gen = [species[0] for species in species_dict.values()]
+        self.champions = new_champions
+        next_gen = []
 
         for species in fitness:
             species_dict[species] = species_dict[species][:4] #TODO: Make this more flexible
@@ -255,7 +260,9 @@ class Population():
                 self.create_population(6,2) #TODO: Make this non-static
                 return False
             new_size = fitness[species] / sum(fitness.values()) * self.pop_size
-            for _ in range(int(new_size)-1):
+            if new_size > 5:
+                next_gen.append(species_dict[species][0])
+            for _ in range(int(new_size)):
                 child = self.combine(*random.choices(species_dict[species], k=2))
                 self.innovation_df, self.total_nodes = child.mutate(self.innovation_df, self.total_nodes)
                 child.build(self.total_nodes)                

@@ -1,5 +1,6 @@
 from collections import defaultdict
 import numpy as np
+from pygame.constants import K_KP_PLUS
 from Player import Player
 from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
@@ -40,8 +41,7 @@ class Game(object):
                 if event.key == pygame.K_LEFT:
                     if self.player.human:
                         self.player.turn = "left"
-                    else:
-                        self.counter -= 30*FRAME_RATE
+
                 elif event.key == pygame.K_RIGHT:
                     self.player.turn = "right"
                 elif event.key == pygame.K_UP:
@@ -66,10 +66,15 @@ class Game(object):
                 elif event.key == pygame.K_q:
                     self.display = not self.display
                 elif event.key == pygame.K_c:
-                    print(self.player.network.connections)                  
+                    print(self.player.network.connections.loc[self.player.network.connections['Enabled']])     
+                elif event.key == pygame.K_n:
+                    print(self.player.network.nodes)             
                 elif event.key == pygame.K_f:
                     self.reproduce()
                     self.counter = 0
+                elif event.key == pygame.K_KP_PLUS:
+                    self.counter -= 30*FRAME_RATE
+                    
                 elif event.key == pygame.K_p:
                     self.player_list[-1].human = True
                     self.player = self.player_list[-1]

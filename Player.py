@@ -45,6 +45,7 @@ class Player:
         if self.speed_down:
             self.accelerate(-ACCELERATION_DEFAULT)
         self.move(obstacles, level, checkpoints, counter)
+        self.fitness += np.linalg.norm(self.speed)
 
     def observe(self, obstacles, level):
         view = np.array([math.cos(self.direction), math.sin(self.direction)])
@@ -118,7 +119,7 @@ class Player:
     def check_point(self, checkpoints, counter):
         new_position = self.position + self.speed
         if intersect([self.position, new_position], checkpoints[self.checkpoint]):
-            self.fitness += 1
+            self.fitness += 10000
             self.last_checkpoint = counter
             self.checkpoint = (self.checkpoint + 1) % len(checkpoints)
 
@@ -139,19 +140,14 @@ class Player:
                 parallel, perpendicular = split(points[i] - points[(i+1)%len(points)], self.speed)
                 new_speed = (parallel - perpendicular)*.3
                 self.set_speed(new_speed[0], new_speed[1])
-    
+                if np.linalg.norm(self.speed) > 1:
+                    self.fitness -= 100 
+
     def friction(self):
         if np.linalg.norm(self.speed) < 5:
             self.speed -= self.speed*0.05
         else:
-            self.speed -= self.speed*.0125*np.linalg.norm(self.speed)
-
-    def check_food(self, food):
-        if np.linalg.norm(self.position - food.position) < food.radius:
-            self.fitness += 1
-            food.pickup()
-            self.colour = RED
-        
+            self.speed -= self.speed*.0125*np.linalg.norm(self.speed)       
         
     def set_speed(self, x_speed, y_speed):
         self.speed[0] = x_speed
