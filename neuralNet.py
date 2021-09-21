@@ -325,7 +325,7 @@ class Population():
                     (k in new_connections['From_node'].values) or 
                     (v != 'Hidden')
                 )}
-        new_network.new_order = list(np.unique(np.concatenate((network1.order, network2.order))))
+        new_network.order = list(np.unique(np.concatenate((network1.order, network2.order))))
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
 #%%
