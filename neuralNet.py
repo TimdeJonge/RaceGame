@@ -27,14 +27,11 @@ class AI_network():
     
     def create_network(self, n_input_nodes, n_output_nodes, innovation_df_g):
         total_nodes = n_input_nodes + n_output_nodes
-        self.nodes = dict()
+        self.nodes = {}
         for i in range(total_nodes):
-            if i < n_input_nodes:
-                node_type = 'Input'
-            else:
-                node_type = 'Output'
+            node_type = 'Input' if i < n_input_nodes else 'Output'
             self.nodes[i] = node_type
-        self.nodes[total_nodes] = 'Bias' 
+        self.nodes[total_nodes] = 'Bias'
         self.connections  = pd.DataFrame(columns = ['From_node','To_node', 'Weight', 'Enabled', 'Innovation_number', 'Abbrev'])
         innovation_df_g = self.add_connection(innovation_df_g)
         self.order = list(filter_dict(self.nodes, 'Output'))
@@ -83,7 +80,7 @@ class AI_network():
         return innovation_df_g
         
     def append_connection(self, innovation_df, From_node, To_node, connection_weight):
-        if not f'{From_node}-{To_node}' in innovation_df['Abbrev'].values:
+        if f'{From_node}-{To_node}' not in innovation_df['Abbrev'].values:
             innovation_df = innovation_df.append({'Abbrev' : f'{From_node}-{To_node}', 
                         'Innovation_number' : len(innovation_df)}, 
                         ignore_index=True)
@@ -212,7 +209,7 @@ class Population():
         self.total_nodes = None
     
     def __iter__(self):
-        return (network for network in self.list)
+        return iter(self.list)
     
     def __len__(self):
         return len(self.list)
@@ -286,7 +283,6 @@ class Population():
                                 on='Innovation_number', 
                                 how='outer', 
                                 suffixes=[1,2])
-        
         total_connections['Weight_diff'] = abs(total_connections['Weight1'] - total_connections['Weight2'])
         total_connections['Excess'] = total_connections['Innovation_number'] > excess_threshold
         total_connections['Disjoint'] = total_connections['Weight_diff'].isnull() & ~total_connections['Excess']
@@ -302,48 +298,36 @@ class Population():
         return distance
 
     @staticmethod
+    def residual_connections(connections, new_connections):
+        not_in_new = connections.loc[~connections['Innovation_number'].isin(new_connections['Innovation_number'])]
+        random_num = random.randint(0,len(not_in_new))
+        if (random_num > 0 & len(not_in_new) > 0):
+            add_connections = not_in_new.sample(random_num)
+            new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
+        return new_connections
+
+
+    @staticmethod
     def combine(network1, network2, verbose = False):
         connections1 = network1.connections
         connections2 = network2.connections
-       
-        # Connections that both networks have in common
-        double_connections = connections1.loc[connections1['Innovation_number'].isin(connections2['Innovation_number'])]
-        double_connections.loc[:,'rand_num'] = np.random.randint(1,3, double_connections.shape[0])
-        # double_connections.loc[:,'rand_num'] = double_connections.apply()
-
-        innov1 = double_connections.loc[(double_connections['rand_num'] == 1), 'Innovation_number']
-        double_con1 = connections1.loc[connections1['Innovation_number'].isin(innov1)]
-
-        innov2 = double_connections.loc[(double_connections['rand_num'] == 2), 'Innovation_number']
-        double_con2 = connections2.loc[connections2['Innovation_number'].isin(innov2)]
-
-        new_connections = pd.concat((double_con1,double_con2))
-
-        # Find connections that are not yet in new connections
-        connections1_notin = connections1.loc[~connections1['Innovation_number'].isin(new_connections['Innovation_number'])]
-
-        # Randomly add connections that were not in both networks
-        random_num = random.randint(0,len(connections1_notin))
-        try:
-            add_connections = connections1_notin.sample(random_num)
-        except ValueError:
-            if verbose:
-                print('No value to add')
-        new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
-        # Same story
-        connections2_notin = connections2.loc[~connections2['Innovation_number'].isin(new_connections['Innovation_number'])]
-        random_num = random.randint(0,len(connections2_notin))
-        try:
-            add_connections = connections2_notin.sample(random_num)
-        except ValueError:
-            if verbose:
-                print('No value to add')
-        new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
-        # Set new nodes
+        matching_genes = connections1.loc[connections1['Innovation_number'].isin(connections2['Innovation_number'])]
+        matching_genes = matching_genes.assign(rand_num=np.random.randint(1,3, matching_genes.shape[0]))
+        match_in1 = connections1.loc[connections1['Innovation_number'].isin(matching_genes.loc[(matching_genes['rand_num'] == 1), 'Innovation_number'])]
+        match_in2 = connections2.loc[connections2['Innovation_number'].isin(matching_genes.loc[(matching_genes['rand_num'] == 2), 'Innovation_number'])]
+        new_connections = pd.concat((match_in1,match_in2))
+        for _, row in new_connections.iterrows():
+            if ((connections1.loc[(connections1['Innovation_number'] == row['Innovation_number']),'Enabled'].values + 
+                connections2.loc[(connections2['Innovation_number'] == row['Innovation_number']),'Enabled'].values) == 1):
+                new_connections.loc[new_connections['Innovation_number'] == row['Innovation_number'], 'Enabled'] = np.random.random() < 0.25
+        new_network = AI_network(verbose = verbose)
+        if (network1.fitness > network2.fitness):
+            new_network.connections = population.residual_connections(connections1, new_connections)
+        else:
+            new_network.connections = population.residual_connections(connections2, new_connections)
         new_nodes = network1.nodes.copy()
-        new_nodes.update(network2.nodes)        
-
-        new_nodes = {
+        new_nodes.update(network2.nodes)
+        new_network.nodes = {
                 k : v 
                 for k,v in new_nodes.items() 
                 if (
@@ -351,12 +335,7 @@ class Population():
                     (k in new_connections['From_node'].values) or 
                     (v != 'Hidden')
                 )}
-        new_order = list(np.unique(np.concatenate((network1.order, network2.order))))
-
-        new_network = AI_network(verbose = verbose)
-        new_network.connections = new_connections
-        new_network.nodes = new_nodes
-        new_network.order = new_order
+        new_network.new_order = list(np.unique(np.concatenate((network1.order, network2.order))))
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
 #%%
