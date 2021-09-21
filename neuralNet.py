@@ -298,16 +298,6 @@ class Population():
         return distance
 
     @staticmethod
-    def residual_connections(connections, new_connections):
-        not_in_new = connections.loc[~connections['Innovation_number'].isin(new_connections['Innovation_number'])]
-        random_num = random.randint(0,len(not_in_new))
-        if (random_num > 0 & len(not_in_new) > 0):
-            add_connections = not_in_new.sample(random_num)
-            new_connections = pd.concat((new_connections,add_connections), ignore_index=True)
-        return new_connections
-
-
-    @staticmethod
     def combine(network1, network2, verbose = False):
         connections1 = network1.connections
         connections2 = network2.connections
@@ -322,9 +312,9 @@ class Population():
                 new_connections.loc[new_connections['Innovation_number'] == row['Innovation_number'], 'Enabled'] = np.random.random() < 0.25
         new_network = AI_network(verbose = verbose)
         if (network1.fitness > network2.fitness):
-            new_network.connections = population.residual_connections(connections1, new_connections)
+            new_network.connections = pd.concat((new_connections,connections1.loc[~connections1['Innovation_number'].isin(new_connections['Innovation_number'])]), ignore_index=True)
         else:
-            new_network.connections = population.residual_connections(connections2, new_connections)
+            new_network.connections = pd.concat((new_connections,connections2.loc[~connections2['Innovation_number'].isin(new_connections['Innovation_number'])]), ignore_index=True)
         new_nodes = network1.nodes.copy()
         new_nodes.update(network2.nodes)
         new_network.nodes = {
