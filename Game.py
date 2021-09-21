@@ -6,7 +6,7 @@ from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
 from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
 from neuralNet import AI_network, Population
 import pandas as pd
-from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints
+from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints, richard_checkpoints
 import pygame
 from time import localtime, strftime
 
@@ -119,7 +119,11 @@ class Game(object):
     def reproduce(self):
         self.generation += 1
         print(f'{strftime("%H:%M:%S", localtime())}: Starting Generation {self.generation}')
-        if self.generation%2:
+        if not self.generation%5:
+            self.level = richard
+            self.obstacle_list = create_obstacles(self.level)
+            self.checkpoints = richard_checkpoints
+        elif self.generation%2:
             self.level = turny
             self.obstacle_list = create_obstacles(self.level)
             self.checkpoints = turny_checkpoints

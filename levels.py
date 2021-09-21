@@ -68,29 +68,57 @@ turny[3][6] = 4
 turny[2][6] = 0
 for i in range(6):
     turny[1][i+1] = 0
-height = 14
-width = 11
+
 turny_checkpoints = [[(BLOCK_SIZE, BLOCK_SIZE), (2*BLOCK_SIZE, 2*BLOCK_SIZE)],
                              [(6*BLOCK_SIZE, 2*BLOCK_SIZE), (7*BLOCK_SIZE, BLOCK_SIZE)],
                              [(4*BLOCK_SIZE, 5*BLOCK_SIZE), (5*BLOCK_SIZE, 5*BLOCK_SIZE)],
                              [(3*BLOCK_SIZE, 7*BLOCK_SIZE), (3*BLOCK_SIZE, 8*BLOCK_SIZE)], 
                              [(2*BLOCK_SIZE, 4*BLOCK_SIZE), (3*BLOCK_SIZE, 4*BLOCK_SIZE)]]
 
+richard = [[1 for x in range(15)] for y in range(15)]
+richard[1][4] = 0
+richard[1][5] = 0
+richard[1][6] = 0
+richard[1][7] = 0
+richard[2][7] = 0
+richard[3][7] = 0
+richard[3][8] = 0
+richard[3][9] = 0
+richard[2][9] = 0
+richard[1][9] = 0
+richard[1][10] = 0
+richard[1][11] = 0
+richard[2][11] = 0
+richard[3][11] = 0
+richard[4][11] = 0
+richard[5][11] = 0
+richard[6][11] = 0
+richard[7][11] = 0
+richard[7][10] = 0
+richard[7][9] = 0
+richard[7][8] = 0
+richard[6][8] = 0
+richard[5][8] = 0
+richard[5][7] = 0
+richard[5][6] = 0
+richard[6][6] = 0
+richard[7][6] = 0
+richard[7][5] = 0
+richard[7][4] = 0
+richard[6][4] = 0
+richard[6][3] = 0
+richard[6][2] = 0
+richard[5][2] = 0
+richard[4][2] = 0
+richard[4][3] = 0
+richard[4][4] = 0
+richard[3][4] = 0
+richard[2][4] = 0
 
-richard = [[1 for x in range(width)] for y in range(height)]
-# Y - X 
-for i in range(1,4):
-    richard[1][i+2] = 0
-    richard[9][i] = 0
-    richard[9][i+4] = 0
-    richard[9+i][7] = 0
-    richard[9+i][1] = 0
-    richard[11][i+2] = 0
-    richard[12][i] = 0
-    richard[12][i+4] = 0
-
-    
-for i in range(1,8):
-    richard[i+1][5] = 0 
-    richard[i+1][3] = 0
-
+richard_checkpoints = [[(4*BLOCK_SIZE, 2*BLOCK_SIZE), (5*BLOCK_SIZE, 2*BLOCK_SIZE)],
+                        [(7*BLOCK_SIZE, 1*BLOCK_SIZE), (7*BLOCK_SIZE, 2*BLOCK_SIZE)], 
+                        [(10*BLOCK_SIZE, 1*BLOCK_SIZE), (10*BLOCK_SIZE, 2*BLOCK_SIZE)],
+                        [(11*BLOCK_SIZE, 5*BLOCK_SIZE), (12*BLOCK_SIZE, 5*BLOCK_SIZE)],
+                        [(7*BLOCK_SIZE, 5*BLOCK_SIZE), (7*BLOCK_SIZE, 6*BLOCK_SIZE)],
+                        [(2*BLOCK_SIZE, 5*BLOCK_SIZE), (3*BLOCK_SIZE, 5*BLOCK_SIZE)]
+                        ]
