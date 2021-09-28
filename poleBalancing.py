@@ -16,19 +16,21 @@ class Game:
     def __init__(self, env, verbose, visualise):
         self.generation = 0
         self.population = Population(PLAYER_AMOUNT)
-        self.population.create_population(4,1)
+        input_nodes = 4
+        output_nodes = 1
+        self.population.create_population(input_nodes,output_nodes)
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
-        self.total_nodes = 6
+        self.total_nodes = input_nodes + output_nodes + 1
         self.environment = gym.make(env)
         self.verbose = verbose
         self.visualise = visualise
         self.max_fitness = 0
 
     def run(self):
-        while self.max_fitness < 1000:
+        while self.max_fitness < game.environment._max_episode_steps:
             self.calculate()
             self.reproduce()
-
+        
     def calculate(self):
         network_Score = []
         num_steps = 5000
