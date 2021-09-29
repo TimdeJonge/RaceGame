@@ -214,12 +214,12 @@ class Population():
     def __len__(self):
         return len(self.list)
 
-    def create_population(self, n_input_nodes, n_output_nodes):
+    def create_population(self, n_input_nodes, n_output_nodes, init_mutations):
         self.total_nodes = n_input_nodes + n_output_nodes + 1
         for network in self.list:
             self.innovation_df = network.create_network(n_input_nodes, n_output_nodes, self.innovation_df)
-            self.innovation_df = network.add_connection(self.innovation_df)
-            self.innovation_df = network.add_connection(self.innovation_df)
+            for _ in range(init_mutations):
+                self.innovation_df = network.add_connection(self.innovation_df)
             network.build(self.total_nodes)
         self.speciate()
 
