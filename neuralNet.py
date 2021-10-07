@@ -189,9 +189,9 @@ class AI_network():
             innovation_df_g=self.add_connection(innovation_df_g)
         if random.random() < 0.01:
             innovation_df_g, total_nodes=self.add_hidden_node(innovation_df_g, total_nodes)
-        if random.random() < 0.1:
-            self.disable_connection()
         if random.random() < 0.05:
+            self.disable_connection()
+        if random.random() < 0.03:
             self.enable_connection()
 
         self.build(total_nodes)
