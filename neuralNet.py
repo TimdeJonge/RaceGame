@@ -189,9 +189,9 @@ class AI_network():
             innovation_df_g=self.add_connection(innovation_df_g)
         if random.random() < 0.01:
             innovation_df_g, total_nodes=self.add_hidden_node(innovation_df_g, total_nodes)
-        if random.random() < 0.1:
-            self.disable_connection()
         if random.random() < 0.05:
+            self.disable_connection()
+        if random.random() < 0.03:
             self.enable_connection()
 
         self.build(total_nodes)
@@ -214,12 +214,12 @@ class Population():
     def __len__(self):
         return len(self.list)
 
-    def create_population(self, n_input_nodes, n_output_nodes):
+    def create_population(self, n_input_nodes, n_output_nodes, init_mutations):
         self.total_nodes = n_input_nodes + n_output_nodes + 1
         for network in self.list:
             self.innovation_df = network.create_network(n_input_nodes, n_output_nodes, self.innovation_df)
-            self.innovation_df = network.add_connection(self.innovation_df)
-            self.innovation_df = network.add_connection(self.innovation_df)
+            for _ in range(init_mutations):
+                self.innovation_df = network.add_connection(self.innovation_df)
             network.build(self.total_nodes)
         self.speciate()
 
