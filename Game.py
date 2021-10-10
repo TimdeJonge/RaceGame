@@ -13,9 +13,9 @@ from time import localtime, strftime
 class Game(object):
     def __init__(self):
         self.debug = True
-        self.level = turny
+        self.level = richard
         self.obstacle_list = create_obstacles(self.level)
-        self.checkpoints = turny_checkpoints
+        self.checkpoints = richard_checkpoints
         self.counter = 0
         self.generation = 0
         self.population = Population(PLAYER_AMOUNT)
@@ -126,7 +126,7 @@ class Game(object):
     def reproduce(self, keep_species=True):
         self.generation += 1
         print(f'{strftime("%H:%M:%S", localtime())}: Starting Generation {self.generation}')
-        if not self.generation%5:
+        if not self.generation%3:
             self.level = richard
             self.obstacle_list = create_obstacles(self.level)
             self.checkpoints = richard_checkpoints
@@ -149,6 +149,7 @@ class Game(object):
             self.anger += 1
         if self.anger < 10 and keep_species:
             self.population.advance_generation()
+            self.anger =0
         else:
             self.population.advance_generation(reduce_species=True)
         self.player_list = [Player(network=network) for network in self.population]
