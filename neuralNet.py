@@ -196,6 +196,17 @@ class AI_network():
 
         self.build(total_nodes)
         return innovation_df_g, total_nodes
+    
+    def log(self):
+        return {
+            'id' : id(self),
+            'species' : self.species,
+            'fitness' : self.fitness,
+            'connections' : len(self.connections),
+            'enabled_connections' : len(self.connections.loc[self.connections['Enabled']]),
+            'disabled_connections' : len(self.connections.loc[self.connections['Enabled'] == False]),
+            'hidden_nodes' : len(list(filter_dict(self.nodes, 'Hidden')))
+        }
 
 #%% 
 class Population():
@@ -336,18 +347,20 @@ class Population():
         new_network.order = list(np.unique(np.concatenate((network1.order, network2.order))))
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
+
+    def log(self):
+        network_logs = [network.log() for network in self]
+        return pd.DataFrame.from_records(network_logs).assign(generation=self.generation)
 #%%
 if __name__ == '__main__':
     population = Population()
-    population.create_population(5,1)
+    population.create_population(5,1, 10)
 
     for network in population:
         for _ in range(10):
             population.innovation_df, population.total_nodes = network.mutate(population.innovation_df, population.total_nodes)
         network.run_live([1,1,1,1,1])
         network.fitness = network.state[5]
-    for network in population:
-        print(network.fitness)
     population.advance_generation()
     print(len(population.champions))
     print(population.champions[0].connections)
