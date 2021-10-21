@@ -38,7 +38,8 @@ class TradingBot:
         norm_metrics = ((metrics - metrics.mean()) / metrics.std())
         size_dataset = 10000
         first_sample = np.random.randint(0,len(norm_metrics)-size_dataset)
-        self.data = norm_metrics[first_sample:first_sample+size_dataset]
+        data = norm_metrics[first_sample:first_sample+size_dataset].reset_index()
+        self.data = data
 
     def trade(self):
         while self.population.generation < 100:
@@ -72,7 +73,7 @@ class TradingBot:
                         coins_wallet = 0
                         trades += 1
             
-            change =  self.data.tail(1)['close_value'].values[0] / self.data.loc[1000,'close_value'] 
+            change =  self.data.tail(1)['close_value'].values[0] / self.data.loc[0,'close_value'] 
             network.fitness = int((bank_account + coins_wallet * row['close_value']) / change)
             network.trades = trades
             if self.verbose:
