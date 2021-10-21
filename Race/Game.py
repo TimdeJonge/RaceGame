@@ -1,14 +1,16 @@
 from collections import defaultdict
 import numpy as np
-from pygame.constants import K_KP_PLUS
-from Player import Player
-from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
-from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
-from neuralNet import Population
 import pandas as pd
-from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints, richard_checkpoints
-import pygame
+
+from pygame.constants import K_KP_PLUS
 from time import localtime, strftime
+import pygame
+
+from Race.Player import Player
+from Race.Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
+from Race.Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
+from NeuralNet.neuralNet import Population
+from Race.levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints, richard_checkpoints
 
 class Game(object):
     def __init__(self):

@@ -1,21 +1,25 @@
 #%%
 import gym
-from numpy.testing._private.utils import verbose
 import pandas as pd
 import time 
-from neuralNet import Population
+from NeuralNet.neuralNet import Population
 import numpy as np
-'''
-Reset: Initial state
-Step: current state, reward, done , info
-Render: Opens window
-close: Closes window
-'''
-PLAYER_AMOUNT = 70
+
+
+# Game options: 
+# 'CartPole-v1' 
+# 'MountainCar-v0'
+# 'MountainCarContinuous-v0'
+# BipedalWalker-v3, 500
+# Acrobot-v1
+#  LunarLanderContinuous-v2, 150
+game_name = 'LunarLanderContinuous-v2'
+PLAYER_AMOUNT = 30
+switch_fitness = 150 
 
 
 class Game:
-    def __init__(self, env, verbose, visualise, logging):
+    def __init__(self, env, fitness_switch, verbose, visualise, logging):
         self.env = env
         self.generation = 0
         self.population = Population(PLAYER_AMOUNT)
@@ -27,7 +31,7 @@ class Game:
         except IndexError:
             self.output_nodes = 1
             self.Continuous = False   
-        self.init_connections = 4
+        self.init_connections = self.input_nodes #'all'
         self.output_node_number = self.input_nodes + self.output_nodes - 1
         self.population.create_population(self.input_nodes,self.output_nodes, self.init_connections)
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
@@ -38,6 +42,8 @@ class Game:
         self.logging = logging
         self.log = pd.DataFrame()
         self.level_number = 0
+        self.fitness_switch = fitness_switch
+
     def run(self):
         while self.max_fitness < self.environment._max_episode_steps:
             self.calculate()
@@ -71,7 +77,8 @@ class Game:
                     obs, rewards, done, info = self.environment.step(action)
                 fitness.append(rewards + 1)
                 if ((self.visualise) & (num == 0)  & 
-                    (self.population.generation != 0)):
+                    (self.population.generation != 0)) :
+                    # (self.population.generation % 15 == 0)):
                     self.environment.render()
                     time.sleep(0.001)
 
@@ -88,7 +95,7 @@ class Game:
 
         self.max_fitness = max(network_Score)
         network_Score.sort(reverse = True)
-        if np.mean(network_Score[:4] ) > 200:
+        if np.mean(network_Score[:4] ) > self.fitness_switch:
             self.level_number += 1
         if self.visualise:
             self.environment.close()
@@ -97,23 +104,11 @@ class Game:
     def reproduce(self):
         if self.logging:
             self.log = self.log.append(self.population.log())
-            self.log.to_csv('test1.csv')
+            self.log.to_csv('Logging/test1.csv')
         self.population.advance_generation(reduce_species=False)
         print(f'Generation: {self.population.generation}')
 
 
-#%%
-# Game options: 
-# 'CartPole-v1' 
-# 'MountainCar-v0'
-# 'MountainCarContinuous-v0'
-# BipedalWalker-v3
-# Acrobot-v1
-#  LunarLanderContinuous-v2
-game = Game(env = 'LunarLanderContinuous-v2' , verbose = False, visualise = True, logging = True)
-game.run()
-
-# Number of steps you run the agent for 
-
 # %%
-# Test 1: Enable disable off
+game = Game(env = game_name, fitness_switch = switch_fitness, verbose = False, visualise = True, logging = True)
+game.run()

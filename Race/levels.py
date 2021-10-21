@@ -1,6 +1,6 @@
-from Polygon import Polygon
-from Obstacle import Obstacle
-from Global import BLOCK_SIZE
+from Race.Polygon import Polygon
+from Race.Obstacle import Obstacle
+from Race.Global import BLOCK_SIZE
 
 level = [[1 for x in range(8)] for y in range(6)]
 for i in range(3):
