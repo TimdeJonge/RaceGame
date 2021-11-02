@@ -25,13 +25,14 @@ class AI_network():
         self.order = []
         self.species = None
     
-    def log(self):
+    def log(self, level_number):
         return {'id': id(self), 
         'fitness': self.fitness,
         'species' : self.species,
         'num_connections': len(self.connections),
         'num_enabled_connections' : len(self.connections.loc[self.connections['Enabled']]),
-        'num_nodes' : len(self.nodes)
+        'num_nodes' : len(self.nodes),
+        'level_number': level_number
         }
 
     def create_network(self, n_input_nodes, n_output_nodes, innovation_df_g, init_connections = 1):
@@ -358,9 +359,9 @@ class Population():
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
     
-    def log(self):
+    def log(self, level_number):
         # pd.DataFrame.from_dict({id(network) : network.log() for network in self}, orient = 'index').assign(generation = self.generation)
-        logfile = pd.DataFrame([network.log() for network in self]).assign(generation = self.generation)
+        logfile = pd.DataFrame([network.log(level_number) for network in self]).assign(generation = self.generation)
         return logfile.set_index(['generation', 'id'])
         
          

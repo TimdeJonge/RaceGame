@@ -12,11 +12,11 @@ from NeuralNet.neuralNet import Population
 
 
 symbol = 'BTCEUR'
-PLAYER_AMOUNT = 30
+PLAYER_AMOUNT = 50
 
 class TradingBot:
     def __init__(self, verbose, logging):
-        self.trading_fee = 0.01
+        self.trading_fee = 0.001
         data = self.select_market()
         self.generation = 0
         self.population = Population(PLAYER_AMOUNT)
@@ -31,16 +31,15 @@ class TradingBot:
         self.max_fitness = 0
         self.logging = logging
         self.log = pd.DataFrame()
-        self.profit = 100
+        self.profit = 50
 
     def select_market(self):
-        markets = os.listdir('Data_bitcoin/')
+        markets = os.listdir('Data_bitcoin/Bull_market/')
         key = random.choice(markets)
-        print(key)
-        df = pd.read_csv(f'Data_bitcoin//{key}', index_col=0).fillna(0)
+        df = pd.read_csv(f'Data_bitcoin/Bull_market//{key}', index_col=0).fillna(0)
         metrics = df.loc[1000:,'close_value':].drop(columns = 'symbol')
         metrics.loc[:,'STD24':] = ((metrics.loc[:,'STD24':] - metrics.loc[:,'STD24':].mean()) / metrics.loc[:,'STD24':].std())
-        size_dataset = 4000
+        size_dataset = 3000
         first_sample = np.random.randint(0,len(metrics)-size_dataset)
         return  metrics[first_sample:first_sample+size_dataset].reset_index()
 
@@ -70,25 +69,25 @@ class TradingBot:
                 if self.verbose:
                     print(f'network fitness: {network.fitness}')
                 network_fitness.append(network.fitness)
-            network_Score.append(max(0.01,np.mean(network_fitness)))
+            network.fitness = max(0.01,np.mean(network_fitness))
+            network_Score.append(network.fitness)
         self.max_fitness = max(network_Score)
         print(f'Maximal fitness of generation: {self.max_fitness}')
         return network_Score
 
     def evaluate(self):
         for _ in range(5):
-            network_Score = []
             datasets = self.select_data()
-            for _, network in enumerate(self.population):
+            for num, network in enumerate(self.population.champions):
                 network_fitness = []
+                network_Score = []
                 for dataset in datasets:
                     network = self.compute(network, dataset, evaluate = True)
                     if self.verbose:
                         print(f'network fitness: {network.fitness}')
                     network_fitness.append(network.fitness)
                 network_Score.append(np.mean(network_fitness))
-                break
-            print(f'fitness of the network: {network_Score[0]}')
+                print(f'Money made by champion {num}: {network_Score[0]}')
 
     def compute(self, network, dataset, evaluate = None):
         bank_account = 1000
@@ -113,7 +112,7 @@ class TradingBot:
                     coins_wallet = 0
                     trades += 1
         change =  np.mean(dataset.tail(100)['close_value'].values) / np.mean(dataset.loc[0:100,'close_value'].values )
-        network.fitness = int((bank_account + coins_wallet * row['close_value']) / change) -1000
+        network.fitness = int((bank_account + coins_wallet * row['close_value']) / change)
         network.trades = trades
         return network
 

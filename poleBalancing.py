@@ -5,7 +5,6 @@ import time
 from NeuralNet.neuralNet import Population
 import numpy as np
 
-
 # Game options: 
 # 'CartPole-v1' 
 # 'MountainCar-v0'
@@ -14,12 +13,12 @@ import numpy as np
 # Acrobot-v1
 #  LunarLanderContinuous-v2, 150
 game_name = 'LunarLanderContinuous-v2'
-PLAYER_AMOUNT = 30
 switch_fitness = 150 
 
 
 class Game:
-    def __init__(self, env, fitness_switch, verbose, visualise, logging):
+    def __init__(self, PLAYER_AMOUNT, env, fitness_switch, verbose, visualise, logging, name_log):
+        self.name_log = name_log
         self.env = env
         self.generation = 0
         self.population = Population(PLAYER_AMOUNT)
@@ -47,8 +46,25 @@ class Game:
     def run(self):
         while self.max_fitness < self.environment._max_episode_steps:
             self.calculate()
+            if ((self.level_number == 20) or (self.population.generation == 150)):
+                    break
             self.reproduce()
-        
+
+    def actions(self, network):
+        action = []
+        for output_node in range(self.output_nodes):
+            output_node_index = self.input_nodes + output_node
+            if self.Continuous:
+                action.append(network.state[output_node_index]*2-1)
+            elif network.state[output_node_index] < 0.3:
+                action.append(1)
+            elif network.state[output_node_index] > 0.7:
+                action.append(-1)
+            else:
+                action.append(0)
+        return action 
+
+
     def calculate(self):
         network_Score = []
         num_steps = 500
@@ -58,24 +74,13 @@ class Game:
             fitness = []
             for _ in range(num_steps):
                 network.run_live(obs)
-                action = []
-                
-                for output_node in range(self.output_nodes):
-                    output_node_index = self.input_nodes + output_node
-                    if self.Continuous:
-                        action.append(network.state[output_node_index]*2-1)
-                    elif network.state[output_node_index] < 0.3:
-                        action.append(1)
-                    elif network.state[output_node_index] > 0.7:
-                        action.append(-1)
-                    else:
-                        action.append(0)
-
+                action = self.actions(network)
                 if self.output_nodes == 1:
                     obs, rewards, done, info = self.environment.step(action[0])
                 else:
                     obs, rewards, done, info = self.environment.step(action)
                 fitness.append(rewards + 1)
+
                 if ((self.visualise) & (num == 0)  & 
                     (self.population.generation != 0)) :
                     # (self.population.generation % 15 == 0)):
@@ -99,16 +104,24 @@ class Game:
             self.level_number += 1
         if self.visualise:
             self.environment.close()
-        print(f'Maximal fitness of generation: {self.max_fitness}')
+        if self.verbose:
+            print(f'Maximal fitness of generation: {self.max_fitness}')
             
     def reproduce(self):
         if self.logging:
-            self.log = self.log.append(self.population.log())
-            self.log.to_csv('Logging/test1.csv')
+            self.log = self.log.append(self.population.log(self.level_number))
+            self.log.to_csv(self.name_log)
         self.population.advance_generation(reduce_species=False)
-        print(f'Generation: {self.population.generation}')
+        if self.verbose:
+            print(f'Generation: {self.population.generation}')
 
 
 # %%
-game = Game(env = game_name, fitness_switch = switch_fitness, verbose = False, visualise = True, logging = True)
-game.run()
+for player_amount in range(10,100,10):
+    name_log = f'Logging/log_Nplayers_{player_amount}'
+    game = Game(player_amount, env = game_name, fitness_switch = switch_fitness, verbose = False, visualise = False, logging = True, name_log = name_log)
+    game.run()
+
+
+
+# %%
