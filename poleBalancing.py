@@ -30,7 +30,7 @@ class Game:
         except IndexError:
             self.output_nodes = 1
             self.Continuous = False   
-        self.init_connections = self.input_nodes #'all'
+        self.init_connections = 'all'
         self.output_node_number = self.input_nodes + self.output_nodes - 1
         self.population.create_population(self.input_nodes,self.output_nodes, self.init_connections)
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
@@ -46,7 +46,7 @@ class Game:
     def run(self):
         while self.max_fitness < self.environment._max_episode_steps:
             self.calculate()
-            if ((self.level_number == 20) or (self.population.generation == 150)):
+            if ((self.level_number == 21) or (self.population.generation == 150)):
                     break
             self.reproduce()
 
@@ -111,17 +111,18 @@ class Game:
         if self.logging:
             self.log = self.log.append(self.population.log(self.level_number))
             self.log.to_csv(self.name_log)
-        self.population.advance_generation(reduce_species=False)
+        self.population.advance_generation(reduce_species=False, verbose = False)
         if self.verbose:
             print(f'Generation: {self.population.generation}')
 
 
 # %%
 for player_amount in range(10,100,10):
-    name_log = f'Logging/log_Nplayers_{player_amount}'
-    game = Game(player_amount, env = game_name, fitness_switch = switch_fitness, verbose = False, visualise = False, logging = True, name_log = name_log)
-    game.run()
-
-
+    for i in range(5):
+        name_log = f'Logging/log_Nplayers_{player_amount}_{i}.csv'
+        print(name_log)
+        game = Game(player_amount, env = game_name, fitness_switch = switch_fitness, verbose = False, visualise = False, logging = True, name_log = name_log)
+        game.run()
+        print(f'Total generations: {game.population.generation}')
 
 # %%

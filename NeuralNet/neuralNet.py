@@ -250,7 +250,7 @@ class Population():
                 self.species_count += 1
                 self.champions.append(network)
 
-    def advance_generation(self, reduce_species=False):
+    def advance_generation(self, reduce_species=False, verbose = None):
         fitness = {}
         species_dict = defaultdict(list)
         new_champions = []
@@ -279,16 +279,18 @@ class Population():
         fitwork = max(self.list, key=lambda x: x.fitness)
         fitwork.build(self.total_nodes)
         next_gen.append(fitwork)
-        print(f'Total fitness = {sum(fitness.values())}')
+        if verbose:
+            print(f'Total fitness = {sum(fitness.values())}')
         for species in fitness:
             species_dict[species] = species_dict[species][:4] #TODO: Make this more flexible
             new_size = fitness[species] / sum(fitness.values()) * self.pop_size
             if new_size >= 3:
                 species_dict[species][0].build(self.total_nodes)
                 next_gen.append(species_dict[species][0])
-                print(f'The species {species} fitness was {fitness[species]}')
-                print(f'Saved the species {species} Champion with {new_size} new members.')
-                print(f'He had fitness {species_dict[species][0].fitness}')
+                if verbose:
+                    print(f'The species {species} fitness was {fitness[species]}')
+                    print(f'Saved the species {species} Champion with {new_size} new members.')
+                    print(f'He had fitness {species_dict[species][0].fitness}')
             for _ in range(int(new_size)):
                 child = self.combine(*random.choices(species_dict[species], k=2))
                 self.innovation_df, self.total_nodes = child.mutate(self.innovation_df, self.total_nodes)
