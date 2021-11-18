@@ -1,8 +1,9 @@
 import pygame
 import math
 import numpy as np
-from Global import ACCELERATION_DEFAULT, BLACK, BLOCK_SIZE, RED
-from helpfunctions import intersect, split, line_intersection
+
+from Race.Global import ACCELERATION_DEFAULT, BLACK, BLOCK_SIZE, RED
+from Race.helpfunctions import intersect, split, line_intersection
 
 class Player:
     def __init__(self, network=None, colour=BLACK, position = None, speed=None):

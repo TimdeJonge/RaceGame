@@ -1,6 +1,6 @@
 #%%
-from Game import Game
-from Global import SCREEN_HEIGHT, SCREEN_WIDTH, FRAME_RATE
+from Race.Game import Game
+from Race.Global import SCREEN_HEIGHT, SCREEN_WIDTH, FRAME_RATE
 import pygame
 def main():
     pygame.mixer.pre_init(44100, -16, 2, 2048)
@@ -28,5 +28,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-# %%

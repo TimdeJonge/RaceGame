@@ -1,5 +1,5 @@
 import pygame
-from Global import OBSTACLE_COLOUR
+from Race.Global import OBSTACLE_COLOUR
 import numpy as np
 
 

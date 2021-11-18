@@ -1,14 +1,16 @@
 from collections import defaultdict
 import numpy as np
-from pygame.constants import K_KP_PLUS
-from Player import Player
-from Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
-from Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
-from neuralNet import Population
 import pandas as pd
-from levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints, richard_checkpoints
-import pygame
+
+from pygame.constants import K_KP_PLUS
 from time import localtime, strftime
+import pygame
+
+from Race.Player import Player
+from Race.Global import BLACK, SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_AMOUNT
+from Race.Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERATION_TIME
+from NeuralNet.neuralNet import Population
+from Race.levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints, richard_checkpoints
 
 class Game(object):
     def __init__(self):
@@ -19,7 +21,10 @@ class Game(object):
         self.counter = 0
         self.generation = 0
         self.population = Population(PLAYER_AMOUNT)
-        self.population.create_population(6,2)
+        self.input_nodes = 6
+        self.output_nodes = 2
+        self.init_connections = 'all'
+        self.population.create_population(self.input_nodes,self.output_nodes,self.init_connections)
         self.player_list = [Player(network=network) for network in self.population]
         self.player_active = 0
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
@@ -126,11 +131,11 @@ class Game(object):
     def reproduce(self, keep_species=True):
         self.generation += 1
         print(f'{strftime("%H:%M:%S", localtime())}: Starting Generation {self.generation}')
-        if not self.generation%3:
+        if self.generation%10:
             self.level = richard
             self.obstacle_list = create_obstacles(self.level)
             self.checkpoints = richard_checkpoints
-        elif self.generation%2:
+        elif self.generation%9:
             self.level = turny
             self.obstacle_list = create_obstacles(self.level)
             self.checkpoints = turny_checkpoints

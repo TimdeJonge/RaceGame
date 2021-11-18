@@ -25,7 +25,17 @@ class AI_network():
         self.order = []
         self.species = None
     
-    def create_network(self, n_input_nodes, n_output_nodes, innovation_df_g):
+    def log(self, level_number):
+        return {'id': id(self), 
+        'fitness': self.fitness,
+        'species' : self.species,
+        'num_connections': len(self.connections),
+        'num_enabled_connections' : len(self.connections.loc[self.connections['Enabled']]),
+        'num_nodes' : len(self.nodes),
+        'level_number': level_number
+        }
+
+    def create_network(self, n_input_nodes, n_output_nodes, innovation_df_g, init_connections = 1):
         total_nodes = n_input_nodes + n_output_nodes
         self.nodes = {}
         for i in range(total_nodes):
@@ -33,7 +43,15 @@ class AI_network():
             self.nodes[i] = node_type
         self.nodes[total_nodes] = 'Bias'
         self.connections  = pd.DataFrame(columns = ['From_node','To_node', 'Weight', 'Enabled', 'Innovation_number', 'Abbrev'])
-        innovation_df_g = self.add_connection(innovation_df_g)
+        if init_connections == 'all':
+            for input in range(n_input_nodes):
+                for output in range(n_input_nodes, n_input_nodes + n_output_nodes):
+                    innovation_df_g = self.append_connection(innovation_df_g, input, output, connection_weight=np.random.randn())
+            for output in range(n_input_nodes, n_input_nodes + n_output_nodes):
+                innovation_df_g = self.append_connection(innovation_df_g, total_nodes, output, connection_weight=np.random.randn())
+        else:
+            for _ in range(init_connections):
+                innovation_df_g = self.add_connection(innovation_df_g)
         self.order = list(filter_dict(self.nodes, 'Output'))
         return innovation_df_g
 
@@ -185,13 +203,13 @@ class AI_network():
                     self.mutate_weight_small()
                 if random.random() < 0.1:
                     self.mutate_weight_big()
-        if random.random() < 0.1:
+        if random.random() < 0.05:
             innovation_df_g=self.add_connection(innovation_df_g)
         if random.random() < 0.01:
             innovation_df_g, total_nodes=self.add_hidden_node(innovation_df_g, total_nodes)
-        if random.random() < 0.05:
+        if random.random() < 0:
             self.disable_connection()
-        if random.random() < 0.03:
+        if random.random() < 0:
             self.enable_connection()
 
         self.build(total_nodes)
@@ -225,12 +243,10 @@ class Population():
     def __len__(self):
         return len(self.list)
 
-    def create_population(self, n_input_nodes, n_output_nodes, init_mutations):
+    def create_population(self, n_input_nodes, n_output_nodes, init_connections):
         self.total_nodes = n_input_nodes + n_output_nodes + 1
         for network in self.list:
-            self.innovation_df = network.create_network(n_input_nodes, n_output_nodes, self.innovation_df)
-            for _ in range(init_mutations):
-                self.innovation_df = network.add_connection(self.innovation_df)
+            self.innovation_df = network.create_network(n_input_nodes, n_output_nodes, self.innovation_df, init_connections)
             network.build(self.total_nodes)
         self.speciate()
 
@@ -255,35 +271,41 @@ class Population():
                     species_dict[champion.species].append(network)
             if len(species_dict[champion.species]) > 0:
                 fitness[champion.species] = np.mean([network.fitness for network in species_dict[champion.species]])
+                if fitness[champion.species] < 0:
+                    raise ValueError('This should be impossible, and breaks evolution.')
                 species_dict[champion.species].sort(key = lambda x: (-x.fitness))
                 new_champions.append(champion)
-
+        self.species_dict = species_dict.copy()
         self.champions = new_champions
         next_gen = []
-        if reduce_species:
-            print('Reducing species!')
-            print('Old species:')
-            for species in fitness:
-                print(species, fitness[species])
-            fitness = {k : v for k, v in fitness.items() if k in sorted(fitness, key=fitness.get, reverse=True)[:3]}
-            print('New species:')
-            for species in fitness:
-                print(species, fitness[species])
+        # if reduce_species:
+        #     print('Reducing species!')
+        #     print('Old species:')
+        #     for species in fitness:
+        #         print(species, fitness[species])
+        #     fitness = {k : v for k, v in fitness.items() if k in sorted(fitness, key=fitness.get, reverse=True)[:3]}
+        #     print('New species:')
+        #     for species in fitness:
+        #         print(species, fitness[species])
+        fitwork = max(self.list, key=lambda x: x.fitness)
+        fitwork.build(self.total_nodes)
+        next_gen.append(fitwork)
+        print(f'Total fitness = {sum(fitness.values())}')
         for species in fitness:
             species_dict[species] = species_dict[species][:4] #TODO: Make this more flexible
-            if sum(fitness.values()) == 0:
-                self.__init__()
-                self.create_population(6,2) #TODO: Make this non-static
-                return False
             new_size = fitness[species] / sum(fitness.values()) * self.pop_size
-            if new_size > 3:
+            if new_size >= 3:
+                species_dict[species][0].build(self.total_nodes)
                 next_gen.append(species_dict[species][0])
+                print(f'The species {species} fitness was {fitness[species]}')
+                print(f'Saved the species {species} Champion with {new_size} new members.')
+                print(f'He had fitness {species_dict[species][0].fitness}')
             for _ in range(int(new_size)):
                 child = self.combine(*random.choices(species_dict[species], k=2))
                 self.innovation_df, self.total_nodes = child.mutate(self.innovation_df, self.total_nodes)
                 child.build(self.total_nodes)                
                 next_gen.append(child)
-        self.list = next_gen       
+        self.list = next_gen
         self.speciate()
         self.generation += 1
 
@@ -347,20 +369,24 @@ class Population():
         new_network.order = list(np.unique(np.concatenate((network1.order, network2.order))))
         new_network.fitness = (network1.fitness + network2.fitness)/2
         return new_network
-
-    def log(self):
-        network_logs = [network.log() for network in self]
-        return pd.DataFrame.from_records(network_logs).assign(generation=self.generation)
+    
+    def log(self, level_number):
+        # pd.DataFrame.from_dict({id(network) : network.log() for network in self}, orient = 'index').assign(generation = self.generation)
+        logfile = pd.DataFrame([network.log(level_number) for network in self]).assign(generation = self.generation)
+        return logfile.set_index(['generation', 'id'])
+        
+         
 #%%
 if __name__ == '__main__':
     population = Population()
-    population.create_population(5,1, 10)
+    population.create_population(5,1, 5)
 
     for network in population:
         for _ in range(10):
             population.innovation_df, population.total_nodes = network.mutate(population.innovation_df, population.total_nodes)
         network.run_live([1,1,1,1,1])
         network.fitness = network.state[5]
+    df= population.log()
     population.advance_generation()
     print(len(population.champions))
     print(population.champions[0].connections)

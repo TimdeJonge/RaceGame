@@ -1,7 +1,7 @@
-from Vector import Vector
-from Global import *
 import pygame
 
+from Race.Vector import Vector
+from Race.Global import *
 
 class Rectangle:
     def __init__(self, point1, point2, colour=OBSTACLE_COLOUR):

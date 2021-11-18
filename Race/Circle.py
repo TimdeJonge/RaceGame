@@ -1,6 +1,6 @@
 import pygame
-from Vector import Vector
-from Global import *
+from Race.Vector import Vector
+from Race.Global import *
 
 
 class Circle:

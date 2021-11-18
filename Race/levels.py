@@ -1,6 +1,6 @@
-from Polygon import Polygon
-from Obstacle import Obstacle
-from Global import BLOCK_SIZE
+from Race.Polygon import Polygon
+from Race.Obstacle import Obstacle
+from Race.Global import BLOCK_SIZE
 
 level = [[1 for x in range(8)] for y in range(6)]
 for i in range(3):
@@ -116,9 +116,13 @@ richard[3][4] = 0
 richard[2][4] = 0
 
 richard_checkpoints = [[(4*BLOCK_SIZE, 2*BLOCK_SIZE), (5*BLOCK_SIZE, 2*BLOCK_SIZE)],
-                        [(7*BLOCK_SIZE, 1*BLOCK_SIZE), (7*BLOCK_SIZE, 2*BLOCK_SIZE)], 
+                        [(7*BLOCK_SIZE, 1*BLOCK_SIZE), (7*BLOCK_SIZE, 2*BLOCK_SIZE)],
+                        [(8*BLOCK_SIZE, 3*BLOCK_SIZE), (8*BLOCK_SIZE, 4*BLOCK_SIZE)],
                         [(10*BLOCK_SIZE, 1*BLOCK_SIZE), (10*BLOCK_SIZE, 2*BLOCK_SIZE)],
+                        [(11*BLOCK_SIZE, 2*BLOCK_SIZE), (12*BLOCK_SIZE, 2*BLOCK_SIZE)],
                         [(11*BLOCK_SIZE, 5*BLOCK_SIZE), (12*BLOCK_SIZE, 5*BLOCK_SIZE)],
+                        [(10*BLOCK_SIZE, 7*BLOCK_SIZE), (10*BLOCK_SIZE, 8*BLOCK_SIZE)],
                         [(7*BLOCK_SIZE, 5*BLOCK_SIZE), (7*BLOCK_SIZE, 6*BLOCK_SIZE)],
+                        [(5*BLOCK_SIZE, 7*BLOCK_SIZE), (5*BLOCK_SIZE, 8*BLOCK_SIZE)],
                         [(2*BLOCK_SIZE, 5*BLOCK_SIZE), (3*BLOCK_SIZE, 5*BLOCK_SIZE)]
                         ]
