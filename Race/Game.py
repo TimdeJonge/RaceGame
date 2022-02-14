@@ -12,6 +12,8 @@ from Race.Global import WHITE, BACKGROUND_COLOUR, FRAME_RATE, RED, GREEN, GENERA
 from NeuralNet.neuralNet import Population
 from Race.levels import  level, create_obstacles, turny, turny_checkpoints, richard, level_checkpoints, richard_checkpoints
 
+
+
 class Game(object):
     def __init__(self):
         self.debug = True
@@ -27,7 +29,6 @@ class Game(object):
         self.population.create_population(self.input_nodes,self.output_nodes,self.init_connections)
         self.player_list = [Player(network=network) for network in self.population]
         self.player_active = 0
-        self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
         self.total_nodes = 9
         self.last_checkpoint = 0
         self.max_fitness = 0 
