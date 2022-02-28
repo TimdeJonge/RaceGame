@@ -251,7 +251,7 @@ class Population():
                 self.species_count += 1
                 self.champions.append(network)
 
-    def advance_generation(self, reduce_species=False):
+    def advance_generation(self, reduce_species=False, verbose = None):
         fitness = {}
         species_dict = defaultdict(list)
         new_champions = []
