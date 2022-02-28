@@ -23,7 +23,8 @@ class AI_network():
         self.order = []
         self.species = None
         self.population = population
-        self.id = uuid.uuid4()
+        self.id = str(uuid.uuid4()).split('-')[0]
+        self.parents = (None, None)
 
     def create_network(self, n_input_nodes, n_output_nodes, init_connections = 1):
         total_nodes = n_input_nodes + n_output_nodes
@@ -190,6 +191,8 @@ class AI_network():
             'id' : self.id,
             'species' : self.species,
             'fitness' : self.fitness,
+            'parent1' : self.parents[0],
+            'parent2' : self.parents[1],
             'connections' : len(self.connections),
             'enabled_connections' : len(self.connections.loc[self.connections['Enabled']]),
             'disabled_connections' : len(self.connections.loc[self.connections['Enabled'] == False]),
@@ -209,6 +212,7 @@ class Population():
         self.innovation_df = pd.DataFrame(columns = ['Abbrev', 'Innovation_number'])
         self.species_count = 0
         self.total_nodes = None
+
     
     def __iter__(self):
         return iter(self.list)
@@ -276,14 +280,22 @@ class Population():
         #         print(species, fitness[species])
         fitwork = max(self.list, key=lambda x: x.fitness)
         next_gen.append(fitwork)
+        species_log_dict = {}
         for species_key in fitness:
             species = species_dict[species_key]
             new_size = fitness[species_key] / sum(fitness.values()) * self.pop_size
+            champ_log = species[0].log()
+            species_object = {
+                'species' : species_key,
+                'members' : len(species),
+                'new_size' : new_size,
+                'avg_fitness' : fitness[species_key],
+                'top_performer' : champ_log['id'],
+                'top_fitness' : champ_log['fitness'],
+            }
+            species_log_dict[species_key] = species_object
             if new_size >= 3:
                 next_gen.append(species[0])
-                logging.info(f'The species {species_key} fitness was {fitness[species_key]}')
-                logging.info(f'Saved the species {species_key} Champion with {new_size} new members.')
-                logging.info(f'Log: {species[0].log()}')
             for _ in range(int(new_size)):
                 temperature = self.generation / 100
                 parent1, parent2 = random.choices(
@@ -293,11 +305,13 @@ class Population():
                 )
                 child = self.combine(parent1, parent2)
                 next_gen.append(child)
+
         for network in next_gen:
             network.build(self.total_nodes)
         self.list = next_gen
         self.speciate(distance_threshold=2.5)
         self.generation += 1
+        return species_log_dict
 
     @staticmethod
     def distance(network1, network2, coeff_excess=1, coeff_disjoint=1, coeff_weight=0.4):
@@ -357,14 +371,18 @@ class Population():
                 )}
         child.order = list(np.unique(np.concatenate((network1.order, network2.order))))
         child.fitness = (network1.fitness + network2.fitness)/2
+        child.parents = (network1.id, network2.id)
         if mutate:
             child.mutate()      
         return child
     
-    def log(self, level_number):
+    def log(self):
         # pd.DataFrame.from_dict({id(network) : network.log() for network in self}, orient = 'index').assign(generation = self.generation)
-        logfile = pd.DataFrame([network.log(level_number) for network in self]).assign(generation = self.generation)
+        logfile = pd.DataFrame([network.log() for network in self]).assign(generation = self.generation)
         return logfile.set_index(['generation', 'id'])
+    
+    def test_logging(self, level):
+        logging.log(level, 'PANIC')
         
          
 #%%
